@@ -1,9 +1,9 @@
-#ifndef _B2D_BENCH_SHAPES_DATA_H
-#define _B2D_BENCH_SHAPES_DATA_H
+#ifndef BLBENCH_SHAPES_DATA_H
+#define BLBENCH_SHAPES_DATA_H
 
-#include "./module_base.h"
+#include "./module.h"
 
-namespace bench {
+namespace blbench {
 
 struct ShapesData {
   enum Id {
@@ -11,12 +11,12 @@ struct ShapesData {
     kIdCount
   };
 
-  const b2d::Point* data;
+  const BLPoint* data;
   size_t count;
 };
 
 bool getShapesData(ShapesData& dst, uint32_t id);
 
-} // namespace bench
+} // {blbench}
 
-#endif // _B2D_BENCH_SHAPES_DATA_H
+#endif // BLBENCH_SHAPES_DATA_H

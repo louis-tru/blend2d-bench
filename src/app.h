@@ -1,10 +1,10 @@
-#ifndef _B2D_BENCH_APP_H
-#define _B2D_BENCH_APP_H
+#ifndef BLBENCH_APP_H
+#define BLBENCH_APP_H
 
-#include <b2d/b2d.h>
-#include "./module_base.h"
+#include <blend2d.h>
+#include "./module.h"
 
-namespace bench {
+namespace blbench {
 
 // ============================================================================
 // [bench::BenchApp]
@@ -24,6 +24,7 @@ struct BenchApp {
 
   bool hasArg(const char* key) const;
   const char* valueOf(const char* key) const;
+  int intValueOf(const char* key, int defaultValue) const;
 
   // --------------------------------------------------------------------------
   // [Init / Info]
@@ -31,6 +32,8 @@ struct BenchApp {
 
   bool init();
   void info();
+
+  bool readImage(BLImage&, const char* name, const void* data, size_t size) noexcept;
 
   // --------------------------------------------------------------------------
   // [Helpers]
@@ -54,15 +57,17 @@ struct BenchApp {
   char** _argv;
 
   // Configuration.
+  bool _isolated;
   bool _deepBench;
   bool _saveImages;
-  bool _b2dTune;
   uint32_t _compOp;
+  uint32_t _repeat;
+  uint32_t _quantity;
 
   // Assets.
-  b2d::Image _sprites[4];
+  BLImage _sprites[4];
 };
 
-} // namespace bench
+} // {blbench}
 
-#endif // _B2D_BENCH_APP_H
+#endif // BLBENCH_APP_H

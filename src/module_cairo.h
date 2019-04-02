@@ -1,21 +1,21 @@
-#ifndef _B2D_BENCH_MODULE_CAIRO_H
-#define _B2D_BENCH_MODULE_CAIRO_H
+#ifndef BLBENCH_MODULE_CAIRO_H
+#define BLBENCH_MODULE_CAIRO_H
 
-#include "./module_base.h"
+#include "./module.h"
 
 #include <cairo.h>
 
-namespace bench {
+namespace blbench {
 
 // ============================================================================
-// [bench::CairoUtil]
+// [bench::CairoUtils]
 // ============================================================================
 
-struct CairoUtil {
-  static uint32_t toCairoFormat(uint32_t pixelFormat);
+struct CairoUtils {
+  static uint32_t toCairoFormat(uint32_t format);
   static uint32_t toCairoOperator(uint32_t compOp);
 
-  static void round(cairo_t* ctx, const b2d::Rect& rect, double radius);
+  static void roundRect(cairo_t* ctx, const BLRect& rect, double radius);
 };
 
 // ============================================================================
@@ -53,13 +53,12 @@ struct CairoModule : public BenchModule {
   virtual void onDoRoundSmooth(bool stroke);
   virtual void onDoRoundRotated(bool stroke);
   virtual void onDoPolygon(uint32_t mode, uint32_t complexity);
-  virtual void onDoShape(bool stroke, const b2d::Point* pts, size_t count);
+  virtual void onDoShape(bool stroke, const BLPoint* pts, size_t count);
 
   // --------------------------------------------------------------------------
   // [Members]
   // --------------------------------------------------------------------------
 
-  b2d::ImageBuffer _lockedSurface;
   cairo_surface_t* _cairoSurface;
   cairo_surface_t* _cairoSprites[kBenchNumSprites];
   cairo_t* _cairoContext;
@@ -69,6 +68,6 @@ struct CairoModule : public BenchModule {
   uint32_t _patternFilter;
 };
 
-} // namespace bench
+} // {blbench}
 
-#endif // _B2D_BENCH_MODULE_CAIRO_H
+#endif // BLBENCH_MODULE_CAIRO_H

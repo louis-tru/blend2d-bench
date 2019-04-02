@@ -1,10 +1,10 @@
-#ifndef _B2D_BENCH_MODULE_B2D_H
-#define _B2D_BENCH_MODULE_B2D_H
+#ifndef BLBENCH_MODULE_BLEND2D_H
+#define BLBENCH_MODULE_BLEND2D_H
 
-#include <b2d/b2d.h>
-#include "./module_base.h"
+#include <blend2d.h>
+#include "./module.h"
 
-namespace bench {
+namespace blbench {
 
 // ============================================================================
 // [bench::BlendModule]
@@ -15,7 +15,7 @@ struct BlendModule : public BenchModule {
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
-  explicit BlendModule(uint32_t optLevel = b2d::Runtime::kOptLevel_None);
+  explicit BlendModule(uint32_t cpuFeatures = 0);
   virtual ~BlendModule();
 
   // --------------------------------------------------------------------------
@@ -34,20 +34,20 @@ struct BlendModule : public BenchModule {
   virtual void onDoRoundSmooth(bool stroke);
   virtual void onDoRoundRotated(bool stroke);
   virtual void onDoPolygon(uint32_t mode, uint32_t complexity);
-  virtual void onDoShape(bool stroke, const b2d::Point* pts, size_t count);
+  virtual void onDoShape(bool stroke, const BLPoint* pts, size_t count);
 
   // --------------------------------------------------------------------------
   // [Members]
   // --------------------------------------------------------------------------
 
-  b2d::Context2D _context;
-  uint32_t _optLevel;
+  BLContext _context;
+  uint32_t _cpuFeatures;
 
   // Initialized by onBeforeRun().
   uint32_t _gradientType;
   uint32_t _gradientExtend;
 };
 
-} // namespace bench
+} // {blbench}
 
-#endif // _B2D_BENCH_MODULE_B2D_H
+#endif // BLBENCH_MODULE_BLEND2D_H

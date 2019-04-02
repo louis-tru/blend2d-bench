@@ -1,8 +1,8 @@
 #include "./app.h"
-#include "./module_base.h"
+#include "./module.h"
 #include "./shapes_data.h"
 
-namespace bench {
+namespace blbench {
 
 // ============================================================================
 // [bench::BenchModule - Construction / Destruction]
@@ -38,15 +38,14 @@ void BenchModule::run(const BenchApp& app, const BenchParams& params) {
 
   // Initialize the sprites.
   for (uint32_t i = 0; i < kBenchNumSprites; i++) {
-    b2d::Image::scale(
+    BLImage::scale(
       _sprites[i],
       app._sprites[i],
-      b2d::IntSize(params.shapeSize, params.shapeSize),
-      b2d::ImageScaler::Params(b2d::ImageScaler::kFilterBilinear));
+      BLSizeI(params.shapeSize, params.shapeSize), BL_IMAGE_SCALE_FILTER_BILINEAR);
   }
 
   onBeforeRun();
-  _ticks = b2d::CpuTicks::now();
+  _ticks = BLRuntime::getTickCount();
 
   switch (_params.benchId) {
     case kBenchIdFillAlignedRect   : onDoRectAligned(false); break;
@@ -73,8 +72,8 @@ void BenchModule::run(const BenchApp& app, const BenchParams& params) {
     case kBenchIdStrokeShapeWorld  : BenchModule_onDoShapeHelper(this, true, ShapesData::kIdWorld); break;
   }
 
-  _ticks = b2d::CpuTicks::now() - _ticks;
+  _ticks = BLRuntime::getTickCount() - _ticks;
   onAfterRun();
 }
 
-} // bench namespace
+} // {blbench}

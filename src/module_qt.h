@@ -1,23 +1,23 @@
-#ifndef _B2D_BENCH_MODULE_QT_H
-#define _B2D_BENCH_MODULE_QT_H
+#ifndef BLBENCH_MODULE_QT_H
+#define BLBENCH_MODULE_QT_H
 
-#include "./module_base.h"
+#include "./module.h"
 
 #include <QtCore>
 #include <QtGui>
 
-namespace bench {
+namespace blbench {
 
 // ============================================================================
 // [bench::QtUtil]
 // ============================================================================
 
 struct QtUtil {
-  static uint32_t toQtFormat(uint32_t pixelFormat);
+  static uint32_t toQtFormat(uint32_t format);
   static uint32_t toQtOperator(uint32_t compOp);
 
-  static B2D_INLINE QColor toQColor(const b2d::Argb32& argb) {
-    return QColor(argb.r(), argb.g(), argb.b(), argb.a());
+  static inline QColor toQColor(const BLRgba32& rgba) {
+    return QColor(rgba.r, rgba.g, rgba.b, rgba.a);
   }
 };
 
@@ -38,7 +38,7 @@ struct QtModule : public BenchModule {
   // --------------------------------------------------------------------------
 
   template<typename RectT>
-  B2D_INLINE QBrush setupStyle(uint32_t style, const RectT& rect);
+  inline QBrush setupStyle(uint32_t style, const RectT& rect);
 
   // --------------------------------------------------------------------------
   // [Interface]
@@ -56,13 +56,12 @@ struct QtModule : public BenchModule {
   virtual void onDoRoundSmooth(bool stroke);
   virtual void onDoRoundRotated(bool stroke);
   virtual void onDoPolygon(uint32_t mode, uint32_t complexity);
-  virtual void onDoShape(bool stroke, const b2d::Point* pts, size_t count);
+  virtual void onDoShape(bool stroke, const BLPoint* pts, size_t count);
 
   // --------------------------------------------------------------------------
   // [Members]
   // --------------------------------------------------------------------------
 
-  b2d::ImageBuffer _lockedSurface;
   QImage* _qtSurface;
   QImage* _qtSprites[kBenchNumSprites];
   QPainter* _qtContext;
@@ -71,6 +70,6 @@ struct QtModule : public BenchModule {
   uint32_t _gradientSpread;
 };
 
-} // namespace bench
+} // {blbench}
 
-#endif // _B2D_BENCH_MODULE_QT_H
+#endif // BLBENCH_MODULE_QT_H

@@ -1,5 +1,5 @@
-#ifndef _B2D_BENCH_IMAGES_DATA_H
-#define _B2D_BENCH_IMAGES_DATA_H
+#ifndef BLBENCH_IMAGES_DATA_H
+#define BLBENCH_IMAGES_DATA_H
 
 static const uint8_t _resource_ktip_png[] = {
   0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
@@ -3798,4 +3798,4 @@ static const uint8_t _resource_firewall_png[] = {
   0x82
 };
 
-#endif // _B2D_BENCH_IMAGES_DATA_H
+#endif // BLBENCH_IMAGES_DATA_H

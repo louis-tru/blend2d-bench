@@ -3,17 +3,23 @@
 
 #include "./app.h"
 #include "./images_data.h"
-#include "./module_b2d.h"
+#include "./module_blend2d.h"
 
-#if defined(BENCH_ENABLE_CAIRO)
+#if defined(BLBENCH_ENABLE_AGG)
+  #include "./module_agg.h"
+#endif // BLBENCH_ENABLE_CAIRO
+
+#if defined(BLBENCH_ENABLE_CAIRO)
   #include "./module_cairo.h"
-#endif // BENCH_ENABLE_CAIRO
+#endif // BLBENCH_ENABLE_CAIRO
 
-#if defined(BENCH_ENABLE_QT)
+#if defined(BLBENCH_ENABLE_QT)
   #include "./module_qt.h"
-#endif // BENCH_ENABLE_QT
+#endif // BLBENCH_ENABLE_QT
 
-namespace bench {
+#define ARRAY_SIZE(X) uint32_t(sizeof(X) / sizeof(X[0]))
+
+namespace blbench {
 
 // ============================================================================
 // [bench::BenchApp - Constants]
@@ -44,13 +50,13 @@ static const char* benchIdNameList[] = {
 };
 
 static const char* benchCompOpList[] = {
-  "Src",
   "SrcOver",
+  "SrcCopy",
   "SrcIn",
   "SrcOut",
   "SrcAtop",
-  "Dst",
   "DstOver",
+  "DstCopy",
   "DstIn",
   "DstOut",
   "DstAtop",
@@ -98,7 +104,7 @@ const char benchDataFmt[]   = "|%-20s"             "| %-12s"     "| %-14s"      
 
 static uint32_t searchStringList(const char** listData, size_t listSize, const char* key) {
   for (size_t i = 0; i < listSize; i++)
-    if (::strcmp(listData[i], key) == 0)
+    if (strcmp(listData[i], key) == 0)
       return uint32_t(i);
   return 0xFFFFFFFFu;
 }
@@ -110,8 +116,11 @@ static uint32_t searchStringList(const char** listData, size_t listSize, const c
 BenchApp::BenchApp(int argc, char** argv)
   : _argc(argc),
     _argv(argv),
+    _isolated(false),
+    _deepBench(false),
     _saveImages(false),
-    _b2dTune(false) {}
+    _repeat(1),
+    _quantity(1000) {}
 BenchApp::~BenchApp() {}
 
 // ============================================================================
@@ -123,7 +132,7 @@ bool BenchApp::hasArg(const char* key) const {
   char** argv = _argv;
 
   for (int i = 1; i < argc; i++) {
-    if (::strcmp(key, argv[i]) == 0)
+    if (strcmp(key, argv[i]) == 0)
       return true;
   }
 
@@ -134,14 +143,30 @@ const char* BenchApp::valueOf(const char* key) const {
   int argc = _argc;
   char** argv = _argv;
 
-  size_t keySize = std::strlen(key);
+  size_t keySize = strlen(key);
   for (int i = 1; i < argc; i++) {
     const char* val = argv[i];
-    if (::strlen(val) >= keySize + 1 && val[keySize] == '=')
+    if (strlen(val) >= keySize + 1 && val[keySize] == '=' && memcmp(val, key, keySize) == 0)
       return val + keySize + 1;
   }
 
   return NULL;
+}
+
+int BenchApp::intValueOf(const char* key, int defaultValue) const {
+  int argc = _argc;
+  char** argv = _argv;
+
+  size_t keySize = strlen(key);
+  for (int i = 1; i < argc; i++) {
+    const char* val = argv[i];
+    if (strlen(val) >= keySize + 1 && val[keySize] == '=' && memcmp(val, key, keySize) == 0) {
+      const char* s = val + keySize + 1;
+      return atoi(s);
+    }
+  }
+
+  return defaultValue;
 }
 
 // ============================================================================
@@ -149,43 +174,79 @@ const char* BenchApp::valueOf(const char* key) const {
 // ============================================================================
 
 bool BenchApp::init() {
+  _isolated = hasArg("--isolated");
   _deepBench = hasArg("--deep");
   _saveImages = hasArg("--save");
-  _b2dTune = hasArg("--b2d-tune");
   _compOp = 0xFFFFFFFFu;
+  _repeat = intValueOf("--repeat", 1);
+  _quantity = intValueOf("--quantity", 1000);
+
+  if (_repeat <= 0 || _repeat > 100) {
+    printf("ERROR: Invalid repeat [%d] specified\n", _repeat);
+    return false;
+  }
+
+  if (_quantity <= 0 || _quantity > 100000) {
+    printf("ERROR: Invalid quantity [%d] specified\n", _quantity);
+    return false;
+  }
 
   const char* compOpName = valueOf("--compOp");
   if (compOpName != NULL)
-    _compOp = searchStringList(benchCompOpList, B2D_ARRAY_SIZE(benchCompOpList), compOpName);
+    _compOp = searchStringList(benchCompOpList, ARRAY_SIZE(benchCompOpList), compOpName);
 
   info();
 
-  b2d::ImageCodecArray codecs = b2d::ImageCodec::builtinCodecs();
-  b2d::ImageUtils::readImageFromData(_sprites[0], codecs, _resource_babelfish_png, sizeof(_resource_babelfish_png));
-  b2d::ImageUtils::readImageFromData(_sprites[1], codecs, _resource_ksplash_png  , sizeof(_resource_ksplash_png  ));
-  b2d::ImageUtils::readImageFromData(_sprites[2], codecs, _resource_ktip_png     , sizeof(_resource_ktip_png     ));
-  b2d::ImageUtils::readImageFromData(_sprites[3], codecs, _resource_firewall_png , sizeof(_resource_firewall_png ));
-
-  return !_sprites[0].empty() &&
-         !_sprites[1].empty() &&
-         !_sprites[2].empty() &&
-         !_sprites[3].empty() ;
+  return readImage(_sprites[0], "#0", _resource_babelfish_png, sizeof(_resource_babelfish_png)) &&
+         readImage(_sprites[1], "#1", _resource_ksplash_png  , sizeof(_resource_ksplash_png  )) &&
+         readImage(_sprites[2], "#2", _resource_ktip_png     , sizeof(_resource_ktip_png     )) &&
+         readImage(_sprites[3], "#3", _resource_firewall_png , sizeof(_resource_firewall_png ));
 }
 
 void BenchApp::info() {
-  const char checked[][2] = { " ", "x" };
+  BLRuntimeBuildInfo buildInfo;
+  BLRuntime::queryBuildInfo(&buildInfo);
+
+  const char no_yes[][4] = { "no", "yes" };
 
   printf(
-    "b2d_bench - Blend2D benchmarking tool.\n"
+    "bl_bench - Blend2D benchmarking tool\n"
     "\n"
-    "The following options are available:\n"
-    "  --deep     [%s] More fetch-tests that use gradients and textures\n"
-    "  --save     [%s] Save all generated images as .bmp files\n"
-    "  --b2d-tune [%s] Run Blend2D tests with various optimization levels\n"
+    "Blend2D information:\n"
+    "  Version    : %u.%u.%u\n"
+    "  Build type : %s\n"
+    "  Compiled by: %s\n",
+    buildInfo.majorVersion,
+    buildInfo.minorVersion,
+    buildInfo.patchVersion,
+    buildInfo.buildType == BL_RUNTIME_BUILD_TYPE_DEBUG ? "Debug" : "Release",
+    buildInfo.compilerInfo);
+
+  printf(
+    "\n"
+    "The following options are supported/used:\n"
+    "  --save       [%s] Save all generated images as .bmp files\n"
+    "  --deep       [%s] More tests that use gradients and textures\n"
+    "  --isolated   [%s] Use Blend2D isolated context (useful for development)\n"
+    "  --repeat=N   [%d] Number of repeats of each test to select the best time\n"
+    "  --quantity=N [%d] Override the default quantity of each operation\n"
     "\n",
-    checked[_deepBench],
-    checked[_saveImages],
-    checked[_b2dTune]);
+    no_yes[_deepBench],
+    no_yes[_saveImages],
+    no_yes[_isolated],
+    _repeat,
+    _quantity);
+}
+
+bool BenchApp::readImage(BLImage& image, const char* name, const void* data, size_t size) noexcept {
+  BLResult result = image.readFromData(data, size, BLImageCodec::builtInCodecs());
+  if (result != BL_SUCCESS) {
+    printf("Failed to read an image '%s' used for benchmarking\n", name);
+    return false;
+  }
+  else {
+    return true;
+  }
 }
 
 // ============================================================================
@@ -197,12 +258,12 @@ bool BenchApp::isStyleEnabled(uint32_t style) {
     return true;
 
   // If this is not a deep run we just select the following styles to be tested:
-  return style == kBenchStyleSolid          ||
-         style == kBenchStyleLinearPad      ||
-         style == kBenchStyleRadialPad      ||
-         style == kBenchStyleConical        ||
-         style == kBenchStylePatternNN      ||
-         style == kBenchStylePatternBI      ;
+  return style == kBenchStyleSolid     ||
+         style == kBenchStyleLinearPad ||
+         style == kBenchStyleRadialPad ||
+         style == kBenchStyleConical   ||
+         style == kBenchStylePatternNN ||
+         style == kBenchStylePatternBI ;
 }
 
 // ============================================================================
@@ -211,27 +272,34 @@ bool BenchApp::isStyleEnabled(uint32_t style) {
 
 int BenchApp::run() {
   BenchParams params;
-  std::memset(&params, 0, sizeof(params));
+  memset(&params, 0, sizeof(params));
 
   params.screenW = 600;
-  params.screenH = 480;
+  params.screenH = 512;
 
-  params.pixelFormat = b2d::PixelFormat::kPRGB32;
-  params.quantity = 1000;
+  params.format = BL_FORMAT_PRGB32;
+  params.quantity = _quantity;
   params.strokeWidth = 2.0;
 
-  if (_b2dTune) {
-    uint32_t minOptLevel = b2d::Runtime::kOptLevel_X86_SSE2;
-    uint32_t maxOptLevel = b2d::Runtime::hwInfo().optLevel();
+  if (_isolated) {
+    BLRuntimeCpuInfo cpuInfo;
+    BLRuntime::queryCpuInfo(&cpuInfo);
 
-    for (uint32_t optLevel = minOptLevel; optLevel <= maxOptLevel; optLevel++) {
-      // Skip these as they don't provide any benefit.
-      if (optLevel == b2d::Runtime::kOptLevel_X86_SSE3 ||
-          optLevel == b2d::Runtime::kOptLevel_X86_SSE4_2)
-        continue;
+    // Only use features that actually make sense.
+    static const uint32_t x86Features[] = {
+      BL_RUNTIME_CPU_FEATURE_X86_SSE2,
+      BL_RUNTIME_CPU_FEATURE_X86_SSSE3,
+      BL_RUNTIME_CPU_FEATURE_X86_SSE4_1
+    };
 
-      BlendModule module(optLevel);
-      runModule(module, params);
+    const uint32_t* features = x86Features;
+    uint32_t featureCount = ARRAY_SIZE(x86Features);
+
+    for (uint32_t i = 0; i < featureCount; i++) {
+      if ((cpuInfo.features & features[i]) == features[i]) {
+        BlendModule module(features[i]);
+        runModule(module, params);
+      }
     }
   }
   else {
@@ -240,14 +308,21 @@ int BenchApp::run() {
       runModule(module, params);
     }
 
-    #if defined(BENCH_ENABLE_CAIRO)
+    #if defined(BLBENCH_ENABLE_AGG)
+    {
+      AGGModule module;
+      runModule(module, params);
+    }
+    #endif
+
+    #if defined(BLBENCH_ENABLE_CAIRO)
     {
       CairoModule module;
       runModule(module, params);
     }
     #endif
 
-    #if defined(BENCH_ENABLE_QT)
+    #if defined(BLBENCH_ENABLE_QT)
     {
       QtModule module;
       runModule(module, params);
@@ -262,15 +337,18 @@ int BenchApp::runModule(BenchModule& module, BenchParams& params) {
   char fileName[256];
   char styleString[128];
 
-  uint32_t ticksLocal[B2D_ARRAY_SIZE(benchShapeSizeList)];
-  uint32_t ticksTotal[B2D_ARRAY_SIZE(benchShapeSizeList)];
+  uint32_t ticksLocal[ARRAY_SIZE(benchShapeSizeList)];
+  uint32_t ticksTotal[ARRAY_SIZE(benchShapeSizeList)];
 
-  uint32_t compOpFirst = b2d::CompOp::kSrc;
-  uint32_t compOpLast  = b2d::CompOp::kSrcOver;
+  uint32_t compOpFirst = BL_COMP_OP_SRC_OVER;
+  uint32_t compOpLast  = BL_COMP_OP_SRC_COPY;
 
   if (_compOp != 0xFFFFFFFFu) {
     compOpFirst = compOpLast = _compOp;
   }
+
+  BLImageCodec bmpCodec;
+  bmpCodec.findByName(BLImageCodec::builtInCodecs(), "BMP");
 
   for (uint32_t compOp = compOpFirst; compOp <= compOpLast; compOp++) {
     if (!module.supportsCompOp(compOp))
@@ -283,13 +361,13 @@ int BenchApp::runModule(BenchModule& module, BenchParams& params) {
       params.style = style;
 
       // Remove '@' from the style name if not running a deep benchmark.
-      ::strcpy(styleString, benchStyleModeList[style]);
+      strcpy(styleString, benchStyleModeList[style]);
       if (!_deepBench) {
-        char* x = ::strchr(styleString, '@');
+        char* x = strchr(styleString, '@');
         if (x != NULL) x[0] = '\0';
       }
 
-      std::memset(ticksTotal, 0, sizeof(ticksTotal));
+      memset(ticksTotal, 0, sizeof(ticksTotal));
 
       printf(benchBorderStr);
       printf(benchHeaderStr, module._name);
@@ -298,24 +376,30 @@ int BenchApp::runModule(BenchModule& module, BenchParams& params) {
       for (uint32_t testId = 0; testId < kBenchIdCount; testId++) {
         params.benchId = testId;
 
-        for (uint32_t sizeId = 0; sizeId < B2D_ARRAY_SIZE(benchShapeSizeList); sizeId++) {
+        for (uint32_t sizeId = 0; sizeId < ARRAY_SIZE(benchShapeSizeList); sizeId++) {
           params.shapeSize = benchShapeSizeList[sizeId];
-          module.run(*this, params);
 
-          ticksLocal[sizeId]  = module._ticks;
-          ticksTotal[sizeId] += module._ticks;
+          uint32_t ticks = 0xFFFFFFFFu;
+          for (uint32_t attempt = 0; attempt < _repeat; attempt++) {
+            module.run(*this, params);
+
+            if (ticks > module._ticks)
+              ticks = module._ticks;
+          }
+
+          ticksLocal[sizeId]  = ticks;
+          ticksTotal[sizeId] += ticks;
 
           if (_saveImages) {
-            // Save only the last as it's easier to compare visually.
-            if (sizeId == B2D_ARRAY_SIZE(benchShapeSizeList) - 1) {
+            // Save only the last two as these are easier to compare visually.
+            if (sizeId >= ARRAY_SIZE(benchShapeSizeList) - 2) {
               sprintf(fileName, "%s-%s-%s-%s-%c.bmp",
                 module._name,
                 benchIdNameList[params.benchId],
                 benchCompOpList[params.compOp],
                 styleString,
                 'A' + sizeId);
-              b2d::ImageUtils::writeImageToFile(
-                fileName, b2d::ImageCodec::codecByName(b2d::ImageCodec::builtinCodecs(), "BMP"), module._surface);
+              module._surface.writeToFile(fileName, bmpCodec);
             }
           }
         }
@@ -351,17 +435,17 @@ int BenchApp::runModule(BenchModule& module, BenchParams& params) {
   return 0;
 }
 
-} // bench namespace
+} // {blbench}
 
 // ============================================================================
 // [Main]
 // ============================================================================
 
 int main(int argc, char* argv[]) {
-  bench::BenchApp app(argc, argv);
+  blbench::BenchApp app(argc, argv);
 
   if (!app.init()) {
-    printf("Failed to initialize b2d_bench.\n");
+    printf("Failed to initialize bl_bench.\n");
     return 1;
   }
 

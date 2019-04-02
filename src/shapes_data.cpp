@@ -1,6 +1,8 @@
 #include "./shapes_data.h"
 
-namespace bench {
+#define ARRAY_SIZE(X) uint32_t(sizeof(X) / sizeof(X[0]))
+
+namespace blbench {
 
 struct PointData {
   double x, y;
@@ -2214,8 +2216,8 @@ static const PointData path_world[] = {
 bool getShapesData(ShapesData& dst, uint32_t id) {
   switch (id) {
     case ShapesData::kIdWorld:
-      dst.data = reinterpret_cast<const b2d::Point*>(path_world);
-      dst.count = B2D_ARRAY_SIZE(path_world);
+      dst.data = reinterpret_cast<const BLPoint*>(path_world);
+      dst.count = ARRAY_SIZE(path_world);
       return true;
 
     default:
@@ -2225,4 +2227,4 @@ bool getShapesData(ShapesData& dst, uint32_t id) {
   }
 }
 
-} // bench namespace
+} // {blbench}
