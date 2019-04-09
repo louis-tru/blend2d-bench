@@ -62,8 +62,8 @@ void CairoUtils::roundRect(cairo_t* ctx, const BLRect& rect, double radius) {
   double rw2 = rect.w * 0.5;
   double rh2 = rect.h * 0.5;
 
-  double rx = std::min<double>(std::abs(radius), rw2);
-  double ry = std::min<double>(std::abs(radius), rh2);
+  double rx = std::min(blAbs(radius), rw2);
+  double ry = std::min(blAbs(radius), rh2);
 
   double kappaInv = 1 - 0.551915024494;
   double kx = rx * kappaInv;
