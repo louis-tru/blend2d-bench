@@ -114,15 +114,15 @@ void BlendModule::onBeforeRun() {
   int h = int(_params.screenH);
   uint32_t style = _params.style;
 
-  BLContextCreateOptions options {};
+  BLContextCreateInfo createInfo {};
   if (_cpuFeatures) {
-    options.flags = BL_CONTEXT_CREATE_FLAG_ISOLATED_RUNTIME |
-                    BL_CONTEXT_CREATE_FLAG_OVERRIDE_FEATURES;
-    options.cpuFeatures = _cpuFeatures;
+    createInfo.flags = BL_CONTEXT_CREATE_FLAG_ISOLATED_JIT |
+                       BL_CONTEXT_CREATE_FLAG_OVERRIDE_CPU_FEATURES;
+    createInfo.cpuFeatures = _cpuFeatures;
   }
 
   _surface.create(w, h, _params.format);
-  _context.begin(_surface, &options);
+  _context.begin(_surface, &createInfo);
 
   _context.setCompOp(BL_COMP_OP_SRC_COPY);
   _context.setFillStyle(BLRgba32(0x00000000));
@@ -169,7 +169,7 @@ void BlendModule::onDoRectAligned(bool stroke) {
         BLRectI rect(_rndCoord.nextRectI(bounds, wh, wh));
         BLRgba32 color(_rndColor.nextRgba32());
 
-        _context.setOpStyle(opType, color);
+        _context.setStyle(opType, color);
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRect(BLRect(rect.x + 0.5, rect.y + 0.5, rect.w, rect.h));
         else
@@ -193,7 +193,7 @@ void BlendModule::onDoRectAligned(bool stroke) {
         BlendUtil_setupGradient<BLRectI>(this, gradient, style, rect);
 
         _context.save();
-        _context.setOpStyle(opType, gradient);
+        _context.setStyle(opType, gradient);
 
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRect(BLRect(rect.x + 0.5, rect.y + 0.5, rect.w, rect.h));
@@ -244,7 +244,7 @@ void BlendModule::onDoRectSmooth(bool stroke) {
         BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
         BLRgba32 color(_rndColor.nextRgba32());
 
-        _context.setOpStyle(opType, color);
+        _context.setStyle(opType, color);
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRect(rect);
         else
@@ -268,7 +268,7 @@ void BlendModule::onDoRectSmooth(bool stroke) {
         BlendUtil_setupGradient<BLRect>(this, gradient, style, rect);
 
         _context.save();
-        _context.setOpStyle(opType, gradient);
+        _context.setStyle(opType, gradient);
 
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRect(rect);
@@ -324,7 +324,7 @@ void BlendModule::onDoRectRotated(bool stroke) {
 
         _context.save();
         _context.rotate(angle, BLPoint(cx, cy));
-        _context.setOpStyle(opType, color);
+        _context.setStyle(opType, color);
 
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRect(rect);
@@ -352,7 +352,7 @@ void BlendModule::onDoRectRotated(bool stroke) {
 
         _context.save();
         _context.rotate(angle, BLPoint(cx, cy));
-        _context.setOpStyle(opType, gradient);
+        _context.setStyle(opType, gradient);
 
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRect(rect);
@@ -408,7 +408,7 @@ void BlendModule::onDoRoundSmooth(bool stroke) {
         BLRoundRect round(rect, radius);
         BLRgba32 color(_rndColor.nextRgba32());
 
-        _context.setOpStyle(opType, color);
+        _context.setStyle(opType, color);
 
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRoundRect(round);
@@ -436,7 +436,7 @@ void BlendModule::onDoRoundSmooth(bool stroke) {
 
         BlendUtil_setupGradient<BLRect>(this, gradient, style, rect);
         _context.save();
-        _context.setOpStyle(opType, gradient);
+        _context.setStyle(opType, gradient);
 
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRoundRect(round);
@@ -462,7 +462,7 @@ void BlendModule::onDoRoundSmooth(bool stroke) {
         pattern.setMatrix(BLMatrix2D::makeTranslation(rect.x, rect.y));
 
         _context.save();
-        _context.setOpStyle(opType, pattern);
+        _context.setStyle(opType, pattern);
 
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRoundRect(round);
@@ -498,7 +498,7 @@ void BlendModule::onDoRoundRotated(bool stroke) {
 
         _context.save();
         _context.rotate(angle, BLPoint(cx, cy));
-        _context.setOpStyle(opType, color);
+        _context.setStyle(opType, color);
 
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRoundRect(round);
@@ -530,7 +530,7 @@ void BlendModule::onDoRoundRotated(bool stroke) {
 
         _context.save();
         _context.rotate(angle, BLPoint(cx, cy));
-        _context.setOpStyle(opType, gradient);
+        _context.setStyle(opType, gradient);
 
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRoundRect(round);
@@ -557,7 +557,7 @@ void BlendModule::onDoRoundRotated(bool stroke) {
 
         _context.save();
         _context.rotate(angle, BLPoint(cx, cy));
-        _context.setOpStyle(opType, pattern);
+        _context.setStyle(opType, pattern);
 
         if (opType == BL_CONTEXT_OP_TYPE_STROKE)
           _context.strokeRoundRect(round);
@@ -605,7 +605,7 @@ void BlendModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
 
     switch (style) {
       case kBenchStyleSolid: {
-        _context.setOpStyle(opType, _rndColor.nextRgba32());
+        _context.setStyle(opType, _rndColor.nextRgba32());
         break;
       }
 
@@ -618,7 +618,7 @@ void BlendModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
       case kBenchStyleConical: {
         BLRect rect(base.x, base.y, wh, wh);
         BlendUtil_setupGradient<BLRect>(this, gradient, style, rect);
-        _context.setOpStyle(opType, gradient);
+        _context.setStyle(opType, gradient);
         break;
       }
 
@@ -626,7 +626,7 @@ void BlendModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
       case kBenchStylePatternBI: {
         pattern.create(_sprites[nextSpriteId()]);
         pattern.setMatrix(BLMatrix2D::makeTranslation(base.x, base.y));
-        _context.setOpStyle(opType, pattern);
+        _context.setStyle(opType, pattern);
         break;
       }
     }
@@ -680,7 +680,7 @@ void BlendModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {
 
     switch (style) {
       case kBenchStyleSolid: {
-        _context.setOpStyle(opType, _rndColor.nextRgba32());
+        _context.setStyle(opType, _rndColor.nextRgba32());
         break;
       }
 
@@ -693,7 +693,7 @@ void BlendModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {
       case kBenchStyleConical: {
         BLRect rect(base.x, base.y, wh, wh);
         BlendUtil_setupGradient<BLRect>(this, gradient, style, rect);
-        _context.setOpStyle(opType, gradient);
+        _context.setStyle(opType, gradient);
         break;
       }
 
@@ -701,7 +701,7 @@ void BlendModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {
       case kBenchStylePatternBI: {
         pattern.create(_sprites[nextSpriteId()]);
         pattern.setMatrix(BLMatrix2D::makeTranslation(base.x, base.y));
-        _context.setOpStyle(opType, pattern);
+        _context.setStyle(opType, pattern);
         break;
       }
     }

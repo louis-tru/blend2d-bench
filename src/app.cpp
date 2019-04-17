@@ -210,12 +210,12 @@ void BenchApp::info() {
   const char no_yes[][4] = { "no", "yes" };
 
   printf(
-    "bl_bench - Blend2D benchmarking tool\n"
+    "Blend2D Benchmarking Tool\n"
     "\n"
-    "Blend2D information:\n"
+    "Blend2D Information:\n"
     "  Version    : %u.%u.%u\n"
-    "  Build type : %s\n"
-    "  Compiled by: %s\n",
+    "  Build Type : %s\n"
+    "  Compiled By: %s\n",
     buildInfo.majorVersion,
     buildInfo.minorVersion,
     buildInfo.patchVersion,
@@ -282,10 +282,10 @@ int BenchApp::run() {
   params.strokeWidth = 2.0;
 
   if (_isolated) {
-    BLRuntimeCpuInfo cpuInfo;
-    BLRuntime::queryCpuInfo(&cpuInfo);
+    BLRuntimeSystemInfo si;
+    BLRuntime::querySystemInfo(&si);
 
-    // Only use features that actually make sense.
+    // Only use features that could actually make a difference.
     static const uint32_t x86Features[] = {
       BL_RUNTIME_CPU_FEATURE_X86_SSE2,
       BL_RUNTIME_CPU_FEATURE_X86_SSSE3,
@@ -296,7 +296,7 @@ int BenchApp::run() {
     uint32_t featureCount = ARRAY_SIZE(x86Features);
 
     for (uint32_t i = 0; i < featureCount; i++) {
-      if ((cpuInfo.features & features[i]) == features[i]) {
+      if ((si.cpuFeatures & features[i]) == features[i]) {
         BlendModule module(features[i]);
         runModule(module, params);
       }

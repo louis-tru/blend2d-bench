@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1)
 project(bl_bench CXX)
 include(FindPkgConfig)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 
 set(BLBENCH_DIR "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "BlBench directory")
 set(BLEND2D_DIR "${BLBENCH_DIR}/../blend2d" CACHE PATH "Location of 'blend2d'")
