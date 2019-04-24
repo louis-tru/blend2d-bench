@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.8)
+cmake_policy(SET CMP0063 NEW) # Honor visibility properties.
 
 # Bench Project
 # -------------
@@ -11,17 +12,9 @@ set(CMAKE_CXX_STANDARD 11)
 set(BLBENCH_DIR "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "BlBench directory")
 set(BLEND2D_DIR "${BLBENCH_DIR}/../blend2d" CACHE PATH "Location of 'blend2d'")
 
-set(BLEND2D_BUILD_STATIC TRUE)
-include("${BLEND2D_DIR}/CMakeLists.txt")
-
-set(BLBENCH_DEFS "")
-set(BLBENCH_LIBS ${BLEND2D_LIBS})
-set(BLBENCH_CFLAGS ${BLEND2D_CFLAGS})
 set(BLBENCH_INCLUDE_DIRS "")
-
-if("${CMAKE_CXX_COMPILER_ID}" MATCHES "^(GNU|Clang|AppleClang)$")
-  list(APPEND BLBENCH_CFLAGS "-fvisibility=hidden")
-endif()
+set(BLBENCH_DEFINITIONS "")
+set(BLBENCH_LIBRARIES "")
 
 set(BLBENCH_SRC
   src/app.cpp
@@ -40,6 +33,13 @@ set(BLBENCH_SRC
   src/shapes_data.cpp
   src/shapes_data.h
 )
+
+# Bench Module - Blend2D
+# ----------------------
+
+set(BLEND2D_BUILD_STATIC TRUE)
+include("${BLEND2D_DIR}/CMakeLists.txt")
+list(APPEND BLBENCH_LIBRARIES Blend2D::Blend2D)
 
 # Bench Module - AGG
 # -------------------
@@ -203,7 +203,7 @@ set(AGG_SRC
   3rdparty/agg/src/agg_vpgen_segmentator.cpp
 )
 
-list(APPEND BLBENCH_DEFS BLBENCH_ENABLE_AGG)
+list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_AGG)
 list(APPEND BLBENCH_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/3rdparty/agg/include")
 
 # Bench Module - Cairo
@@ -212,8 +212,8 @@ list(APPEND BLBENCH_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/3rdparty/agg/include
 pkg_check_modules(CAIRO cairo)
 if(CAIRO_FOUND)
   message("-- [blbench] adding support for Cairo")
-  list(APPEND BLBENCH_LIBS ${CAIRO_LIBRARIES})
-  list(APPEND BLBENCH_DEFS BLBENCH_ENABLE_CAIRO)
+  list(APPEND BLBENCH_LIBRARIES ${CAIRO_LIBRARIES})
+  list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_CAIRO)
   list(APPEND BLBENCH_INCLUDE_DIRS ${CAIRO_INCLUDE_DIRS})
 endif()
 
@@ -223,16 +223,15 @@ endif()
 find_package(Qt5Gui)
 if(Qt5Gui_FOUND)
   message("-- [blbench] adding support for Qt5")
-  list(APPEND BLBENCH_LIBS Qt5::Gui)
-  list(APPEND BLBENCH_DEFS BLBENCH_ENABLE_QT)
+  list(APPEND BLBENCH_LIBRARIES Qt5::Gui)
+  list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_QT)
 endif()
 
 # Bench Executable
 # ----------------
 
 add_executable(bl_bench ${BLBENCH_SRC} ${AGG_SRC})
-set_target_properties(bl_bench PROPERTIES COMPILE_OPTIONS "${BLBENCH_CFLAGS}")
-set_target_properties(bl_bench PROPERTIES COMPILE_DEFINITIONS "${BLBENCH_DEFS}")
-set_target_properties(bl_bench PROPERTIES INCLUDE_DIRECTORIES "${BLBENCH_INCLUDE_DIRS}")
-target_link_libraries(bl_bench ${BLBENCH_LIBS})
-target_include_directories(bl_bench BEFORE PRIVATE ${BLEND2D_INCLUDE_DIR})
+set_property(TARGET bl_bench PROPERTY CXX_VISIBILITY_PRESET hidden)
+set_property(TARGET bl_bench PROPERTY COMPILE_DEFINITIONS "${BLBENCH_DEFINITIONS}")
+set_property(TARGET bl_bench PROPERTY INCLUDE_DIRECTORIES "${BLBENCH_INCLUDE_DIRS}")
+target_link_libraries(bl_bench ${BLBENCH_LIBRARIES})
