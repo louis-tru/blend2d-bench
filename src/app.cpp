@@ -239,7 +239,7 @@ void BenchApp::info() {
 }
 
 bool BenchApp::readImage(BLImage& image, const char* name, const void* data, size_t size) noexcept {
-  BLResult result = image.readFromData(data, size, BLImageCodec::builtInCodecs());
+  BLResult result = image.readFromData(data, size);
   if (result != BL_SUCCESS) {
     printf("Failed to read an image '%s' used for benchmarking\n", name);
     return false;
@@ -348,7 +348,7 @@ int BenchApp::runModule(BenchModule& module, BenchParams& params) {
   }
 
   BLImageCodec bmpCodec;
-  bmpCodec.findByName(BLImageCodec::builtInCodecs(), "BMP");
+  bmpCodec.findByName("BMP");
 
   for (uint32_t compOp = compOpFirst; compOp <= compOpLast; compOp++) {
     if (!module.supportsCompOp(compOp))
