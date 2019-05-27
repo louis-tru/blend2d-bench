@@ -98,6 +98,9 @@ struct BenchRandom {
     : _prng(seed),
       _initial(seed) {}
 
+  BLRandom _prng;
+  BLRandom _initial;
+
   // --------------------------------------------------------------------------
   // [Rewind]
   // --------------------------------------------------------------------------
@@ -167,13 +170,6 @@ struct BenchRandom {
   inline BLRgba32 nextRgba32() {
     return BLRgba32(_prng.nextUInt32());
   }
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  BLRandom _prng;
-  BLRandom _initial;
 };
 
 // ============================================================================
@@ -181,6 +177,27 @@ struct BenchRandom {
 // ============================================================================
 
 struct BenchModule {
+  //! Module name.
+  char _name[64];
+  //! Current parameters.
+  BenchParams _params;
+  //! Current ticks.
+  uint32_t _ticks;
+
+  //! Random number generator for coordinates (points or rectangles).
+  BenchRandom _rndCoord;
+  //! Random number generator for colors.
+  BenchRandom _rndColor;
+  //! Random number generator for extras (radius).
+  BenchRandom _rndExtra;
+  //! Random number generator for sprites.
+  uint32_t _rndSpriteId;
+
+  //! Blend surface (used by all modules).
+  BLImage _surface;
+  //! Sprites.
+  BLImage _sprites[kBenchNumSprites];
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
@@ -222,31 +239,6 @@ struct BenchModule {
   virtual void onDoRoundRotated(bool stroke) = 0;
   virtual void onDoPolygon(uint32_t mode, uint32_t complexity) = 0;
   virtual void onDoShape(bool stroke, const BLPoint* pts, size_t count) = 0;
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  //! Module name.
-  char _name[64];
-  //! Current parameters.
-  BenchParams _params;
-  //! Current ticks.
-  uint32_t _ticks;
-
-  //! Random number generator for coordinates (points or rectangles).
-  BenchRandom _rndCoord;
-  //! Random number generator for colors.
-  BenchRandom _rndColor;
-  //! Random number generator for extras (radius).
-  BenchRandom _rndExtra;
-  //! Random number generator for sprites.
-  uint32_t _rndSpriteId;
-
-  //! Blend surface (used by all modules).
-  BLImage _surface;
-  //! Sprites.
-  BLImage _sprites[kBenchNumSprites];
 };
 
 } // {blbench}

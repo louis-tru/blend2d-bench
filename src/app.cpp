@@ -297,14 +297,14 @@ int BenchApp::run() {
 
     for (uint32_t i = 0; i < featureCount; i++) {
       if ((si.cpuFeatures & features[i]) == features[i]) {
-        BlendModule module(features[i]);
+        Blend2DModule module(features[i]);
         runModule(module, params);
       }
     }
   }
   else {
     {
-      BlendModule module;
+      Blend2DModule module;
       runModule(module, params);
     }
 

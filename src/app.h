@@ -11,6 +11,21 @@ namespace blbench {
 // ============================================================================
 
 struct BenchApp {
+  // Command line
+  int _argc;
+  char** _argv;
+
+  // Configuration.
+  bool _isolated;
+  bool _deepBench;
+  bool _saveImages;
+  uint32_t _compOp;
+  uint32_t _repeat;
+  uint32_t _quantity;
+
+  // Assets.
+  BLImage _sprites[4];
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
@@ -47,25 +62,6 @@ struct BenchApp {
 
   int run();
   int runModule(BenchModule& module, BenchParams& params);
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  // Command line
-  int _argc;
-  char** _argv;
-
-  // Configuration.
-  bool _isolated;
-  bool _deepBench;
-  bool _saveImages;
-  uint32_t _compOp;
-  uint32_t _repeat;
-  uint32_t _quantity;
-
-  // Assets.
-  BLImage _sprites[4];
 };
 
 } // {blbench}

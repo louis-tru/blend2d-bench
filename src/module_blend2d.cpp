@@ -6,10 +6,10 @@
 namespace blbench {
 
 // ============================================================================
-// [bench::BlendModule - Construction / Destruction]
+// [bench::Blend2DModule - Construction / Destruction]
 // ============================================================================
 
-BlendModule::BlendModule(uint32_t cpuFeatures) {
+Blend2DModule::Blend2DModule(uint32_t cpuFeatures) {
   _cpuFeatures = cpuFeatures;
 
   const char* feature = nullptr;
@@ -24,14 +24,14 @@ BlendModule::BlendModule(uint32_t cpuFeatures) {
 
   snprintf(_name, sizeof(_name), "Blend2D%s%s", feature ? " " : "", feature ? feature : "");
 }
-BlendModule::~BlendModule() {}
+Blend2DModule::~Blend2DModule() {}
 
 // ============================================================================
-// [bench::BlendModule - Helpers]
+// [bench::Blend2DModule - Helpers]
 // ============================================================================
 
 template<typename RectT>
-static void BlendUtil_setupGradient(BlendModule* self, BLGradient& gradient, uint32_t style, const RectT& rect) {
+static void BlendUtil_setupGradient(Blend2DModule* self, BLGradient& gradient, uint32_t style, const RectT& rect) {
   switch (style) {
     case kBenchStyleLinearPad:
     case kBenchStyleLinearRepeat:
@@ -89,14 +89,14 @@ static void BlendUtil_setupGradient(BlendModule* self, BLGradient& gradient, uin
 }
 
 // ============================================================================
-// [bench::BlendModule - Interface]
+// [bench::Blend2DModule - Interface]
 // ============================================================================
 
-bool BlendModule::supportsCompOp(uint32_t compOp) const {
+bool Blend2DModule::supportsCompOp(uint32_t compOp) const {
   return true;
 }
 
-bool BlendModule::supportsStyle(uint32_t style) const {
+bool Blend2DModule::supportsStyle(uint32_t style) const {
   return style == kBenchStyleSolid         ||
          style == kBenchStyleLinearPad     ||
          style == kBenchStyleLinearRepeat  ||
@@ -109,7 +109,7 @@ bool BlendModule::supportsStyle(uint32_t style) const {
          style == kBenchStylePatternBI     ;
 }
 
-void BlendModule::onBeforeRun() {
+void Blend2DModule::onBeforeRun() {
   int w = int(_params.screenW);
   int h = int(_params.screenH);
   uint32_t style = _params.style;
@@ -151,11 +151,11 @@ void BlendModule::onBeforeRun() {
   }
 }
 
-void BlendModule::onAfterRun() {
+void Blend2DModule::onAfterRun() {
   _context.end();
 }
 
-void BlendModule::onDoRectAligned(bool stroke) {
+void Blend2DModule::onDoRectAligned(bool stroke) {
   BLSizeI bounds(_params.screenW, _params.screenH);
 
   uint32_t style = _params.style;
@@ -230,7 +230,7 @@ void BlendModule::onDoRectAligned(bool stroke) {
   }
 }
 
-void BlendModule::onDoRectSmooth(bool stroke) {
+void Blend2DModule::onDoRectSmooth(bool stroke) {
   BLSize bounds(_params.screenW, _params.screenH);
 
   uint32_t style = _params.style;
@@ -305,7 +305,7 @@ void BlendModule::onDoRectSmooth(bool stroke) {
   }
 }
 
-void BlendModule::onDoRectRotated(bool stroke) {
+void Blend2DModule::onDoRectRotated(bool stroke) {
   BLSize bounds(_params.screenW, _params.screenH);
 
   uint32_t style = _params.style;
@@ -391,7 +391,7 @@ void BlendModule::onDoRectRotated(bool stroke) {
   }
 }
 
-void BlendModule::onDoRoundSmooth(bool stroke) {
+void Blend2DModule::onDoRoundSmooth(bool stroke) {
   BLSize bounds(_params.screenW, _params.screenH);
 
   uint32_t style = _params.style;
@@ -476,7 +476,7 @@ void BlendModule::onDoRoundSmooth(bool stroke) {
   }
 }
 
-void BlendModule::onDoRoundRotated(bool stroke) {
+void Blend2DModule::onDoRoundRotated(bool stroke) {
   BLSize bounds(_params.screenW, _params.screenH);
 
   uint32_t style = _params.style;
@@ -571,7 +571,7 @@ void BlendModule::onDoRoundRotated(bool stroke) {
   }
 }
 
-void BlendModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
+void Blend2DModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
   BLSizeI bounds(_params.screenW - _params.shapeSize,
                  _params.screenH - _params.shapeSize);
   uint32_t style = _params.style;
@@ -640,7 +640,7 @@ void BlendModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
   }
 }
 
-void BlendModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {
+void Blend2DModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {
   BLSizeI bounds(_params.screenW - _params.shapeSize,
                  _params.screenH - _params.shapeSize);
   uint32_t style = _params.style;

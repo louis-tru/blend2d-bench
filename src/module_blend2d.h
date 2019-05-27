@@ -7,16 +7,25 @@
 namespace blbench {
 
 // ============================================================================
-// [bench::BlendModule]
+// [bench::Blend2DModule]
 // ============================================================================
 
-struct BlendModule : public BenchModule {
+class Blend2DModule : public BenchModule {
+public:
+
+  BLContext _context;
+  uint32_t _cpuFeatures;
+
+  // Initialized by onBeforeRun().
+  uint32_t _gradientType;
+  uint32_t _gradientExtend;
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
-  explicit BlendModule(uint32_t cpuFeatures = 0);
-  virtual ~BlendModule();
+  explicit Blend2DModule(uint32_t cpuFeatures = 0);
+  virtual ~Blend2DModule();
 
   // --------------------------------------------------------------------------
   // [Interface]
@@ -35,17 +44,6 @@ struct BlendModule : public BenchModule {
   virtual void onDoRoundRotated(bool stroke);
   virtual void onDoPolygon(uint32_t mode, uint32_t complexity);
   virtual void onDoShape(bool stroke, const BLPoint* pts, size_t count);
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  BLContext _context;
-  uint32_t _cpuFeatures;
-
-  // Initialized by onBeforeRun().
-  uint32_t _gradientType;
-  uint32_t _gradientExtend;
 };
 
 } // {blbench}

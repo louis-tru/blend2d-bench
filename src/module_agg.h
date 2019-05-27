@@ -17,6 +17,20 @@ namespace blbench {
 // ============================================================================
 
 struct AGGModule : public BenchModule {
+  typedef agg::pixfmt_bgra32_pre PixelFormat;
+  typedef agg::rasterizer_scanline_aa_nogamma<> Rasterizer;
+  typedef agg::renderer_base<PixelFormat> RendererBase;
+  typedef agg::renderer_scanline_aa_solid<RendererBase> RendererSolid;
+
+  agg::rendering_buffer _aggSurface;
+  agg::scanline_p8 _scanline;
+
+  PixelFormat _pixfmt;
+  Rasterizer _rasterizer;
+
+  RendererBase _rendererBase;
+  RendererSolid _rendererSolid;
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
@@ -27,11 +41,6 @@ struct AGGModule : public BenchModule {
   // --------------------------------------------------------------------------
   // [AGG]
   // --------------------------------------------------------------------------
-
-  typedef agg::pixfmt_bgra32_pre PixelFormat;
-  typedef agg::rasterizer_scanline_aa_nogamma<> Rasterizer;
-  typedef agg::renderer_base<PixelFormat> RendererBase;
-  typedef agg::renderer_scanline_aa_solid<RendererBase> RendererSolid;
 
   void renderScanlines(const BLRect& rect, uint32_t style);
   void fillRectAA(int x, int y, int w, int h, uint32_t style);
@@ -56,19 +65,6 @@ struct AGGModule : public BenchModule {
   virtual void onDoRoundRotated(bool stroke);
   virtual void onDoPolygon(uint32_t mode, uint32_t complexity);
   virtual void onDoShape(bool stroke, const BLPoint* pts, size_t count);
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  agg::rendering_buffer _aggSurface;
-  agg::scanline_p8 _scanline;
-
-  PixelFormat _pixfmt;
-  Rasterizer _rasterizer;
-
-  RendererBase _rendererBase;
-  RendererSolid _rendererSolid;
 };
 
 } // {blbench}

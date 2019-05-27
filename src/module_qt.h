@@ -26,6 +26,13 @@ struct QtUtil {
 // ============================================================================
 
 struct QtModule : public BenchModule {
+  QImage* _qtSurface;
+  QImage* _qtSprites[kBenchNumSprites];
+  QPainter* _qtContext;
+
+  // Initialized by onBeforeRun().
+  uint32_t _gradientSpread;
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
@@ -57,17 +64,6 @@ struct QtModule : public BenchModule {
   virtual void onDoRoundRotated(bool stroke);
   virtual void onDoPolygon(uint32_t mode, uint32_t complexity);
   virtual void onDoShape(bool stroke, const BLPoint* pts, size_t count);
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  QImage* _qtSurface;
-  QImage* _qtSprites[kBenchNumSprites];
-  QPainter* _qtContext;
-
-  // Initialized by onBeforeRun().
-  uint32_t _gradientSpread;
 };
 
 } // {blbench}

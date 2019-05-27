@@ -37,7 +37,7 @@ set(BLBENCH_SRC
 # Bench Module - Blend2D
 # ----------------------
 
-set(BLEND2D_BUILD_STATIC TRUE)
+set(BLEND2D_STATIC TRUE)
 include("${BLEND2D_DIR}/CMakeLists.txt")
 list(APPEND BLBENCH_LIBRARIES Blend2D::Blend2D)
 

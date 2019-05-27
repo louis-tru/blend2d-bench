@@ -23,6 +23,14 @@ struct CairoUtils {
 // ============================================================================
 
 struct CairoModule : public BenchModule {
+  cairo_surface_t* _cairoSurface;
+  cairo_surface_t* _cairoSprites[kBenchNumSprites];
+  cairo_t* _cairoContext;
+
+  // Initialized by onBeforeRun().
+  uint32_t _patternExtend;
+  uint32_t _patternFilter;
+
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
@@ -54,18 +62,6 @@ struct CairoModule : public BenchModule {
   virtual void onDoRoundRotated(bool stroke);
   virtual void onDoPolygon(uint32_t mode, uint32_t complexity);
   virtual void onDoShape(bool stroke, const BLPoint* pts, size_t count);
-
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
-
-  cairo_surface_t* _cairoSurface;
-  cairo_surface_t* _cairoSprites[kBenchNumSprites];
-  cairo_t* _cairoContext;
-
-  // Initialized by onBeforeRun().
-  uint32_t _patternExtend;
-  uint32_t _patternFilter;
 };
 
 } // {blbench}
