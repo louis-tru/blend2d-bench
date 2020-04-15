@@ -26,10 +26,10 @@ namespace blbench {
 // ============================================================================
 
 static const char* benchIdNameList[] = {
-  "FillRectAA",
-  "FillRectNA",
+  "FillRectA",
+  "FillRectU",
   "FillRectRot",
-  "FillRoundNA",
+  "FillRoundU",
   "FillRoundRot",
   "FillPolyNZi10",
   "FillPolyEOi10",
@@ -38,10 +38,10 @@ static const char* benchIdNameList[] = {
   "FillPolyNZi40",
   "FillPolyEOi40",
   "FillWorld",
-  "StrokeRectAA",
-  "StrokeRectNA",
+  "StrokeRectA",
+  "StrokeRectU",
   "StrokeRectRot",
-  "StrokeRoundNA",
+  "StrokeRoundU",
   "StrokeRoundRot",
   "StrokePoly10",
   "StrokePoly20",
@@ -65,6 +65,7 @@ static const char* benchCompOpList[] = {
   "Plus",
   "Merge",
   "Minus",
+  "Modulate",
   "Multiply",
   "Screen",
   "Overlay",
@@ -297,35 +298,45 @@ int BenchApp::run() {
 
     for (uint32_t i = 0; i < featureCount; i++) {
       if ((si.cpuFeatures & features[i]) == features[i]) {
-        Blend2DModule module(features[i]);
-        runModule(module, params);
+        Blend2DModule mod(0, features[i]);
+        runModule(mod, params);
       }
     }
   }
   else {
     {
-      Blend2DModule module;
-      runModule(module, params);
+      Blend2DModule mod(0);
+      runModule(mod, params);
+    }
+
+    {
+      Blend2DModule mod(2);
+      runModule(mod, params);
+    }
+
+    {
+      Blend2DModule mod(4);
+      runModule(mod, params);
     }
 
     #if defined(BLBENCH_ENABLE_AGG)
     {
-      AGGModule module;
-      runModule(module, params);
+      AGGModule mod;
+      runModule(mod, params);
     }
     #endif
 
     #if defined(BLBENCH_ENABLE_CAIRO)
     {
-      CairoModule module;
-      runModule(module, params);
+      CairoModule mod;
+      runModule(mod, params);
     }
     #endif
 
     #if defined(BLBENCH_ENABLE_QT)
     {
-      QtModule module;
-      runModule(module, params);
+      QtModule mod;
+      runModule(mod, params);
     }
     #endif
   }
@@ -333,7 +344,7 @@ int BenchApp::run() {
   return 0;
 }
 
-int BenchApp::runModule(BenchModule& module, BenchParams& params) {
+int BenchApp::runModule(BenchModule& mod, BenchParams& params) {
   char fileName[256];
   char styleString[128];
 
@@ -351,12 +362,12 @@ int BenchApp::runModule(BenchModule& module, BenchParams& params) {
   bmpCodec.findByName("BMP");
 
   for (uint32_t compOp = compOpFirst; compOp <= compOpLast; compOp++) {
-    if (!module.supportsCompOp(compOp))
+    if (!mod.supportsCompOp(compOp))
       continue;
     params.compOp = compOp;
 
     for (uint32_t style = 0; style < kBenchStyleCount; style++) {
-      if (!isStyleEnabled(style) || !module.supportsStyle(style))
+      if (!isStyleEnabled(style) || !mod.supportsStyle(style))
         continue;
       params.style = style;
 
@@ -370,7 +381,7 @@ int BenchApp::runModule(BenchModule& module, BenchParams& params) {
       memset(ticksTotal, 0, sizeof(ticksTotal));
 
       printf(benchBorderStr);
-      printf(benchHeaderStr, module._name);
+      printf(benchHeaderStr, mod._name);
       printf(benchBorderStr);
 
       for (uint32_t testId = 0; testId < kBenchIdCount; testId++) {
@@ -381,10 +392,10 @@ int BenchApp::runModule(BenchModule& module, BenchParams& params) {
 
           uint32_t ticks = 0xFFFFFFFFu;
           for (uint32_t attempt = 0; attempt < _repeat; attempt++) {
-            module.run(*this, params);
+            mod.run(*this, params);
 
-            if (ticks > module._ticks)
-              ticks = module._ticks;
+            if (ticks > mod._ticks)
+              ticks = mod._ticks;
           }
 
           ticksLocal[sizeId]  = ticks;
@@ -394,12 +405,12 @@ int BenchApp::runModule(BenchModule& module, BenchParams& params) {
             // Save only the last two as these are easier to compare visually.
             if (sizeId >= ARRAY_SIZE(benchShapeSizeList) - 2) {
               sprintf(fileName, "%s-%s-%s-%s-%c.bmp",
-                module._name,
+                mod._name,
                 benchIdNameList[params.benchId],
                 benchCompOpList[params.compOp],
                 styleString,
                 'A' + sizeId);
-              module._surface.writeToFile(fileName, bmpCodec);
+              mod._surface.writeToFile(fileName, bmpCodec);
             }
           }
         }

@@ -9,7 +9,8 @@ namespace blbench {
 // [bench::Blend2DModule - Construction / Destruction]
 // ============================================================================
 
-Blend2DModule::Blend2DModule(uint32_t cpuFeatures) {
+Blend2DModule::Blend2DModule(uint32_t threadCount, uint32_t cpuFeatures) {
+  _threadCount = threadCount;
   _cpuFeatures = cpuFeatures;
 
   const char* feature = nullptr;
@@ -22,7 +23,10 @@ Blend2DModule::Blend2DModule(uint32_t cpuFeatures) {
   if (_cpuFeatures & BL_RUNTIME_CPU_FEATURE_X86_AVX   ) feature = "[AVX]";
   if (_cpuFeatures & BL_RUNTIME_CPU_FEATURE_X86_AVX2  ) feature = "[AVX2]";
 
-  snprintf(_name, sizeof(_name), "Blend2D%s%s", feature ? " " : "", feature ? feature : "");
+  if (!_threadCount)
+    snprintf(_name, sizeof(_name), "Blend2D ST%s%s", feature ? " " : "", feature ? feature : "");
+  else
+    snprintf(_name, sizeof(_name), "Blend2D %uT%s%s", _threadCount, feature ? " " : "", feature ? feature : "");
 }
 Blend2DModule::~Blend2DModule() {}
 
@@ -115,6 +119,8 @@ void Blend2DModule::onBeforeRun() {
   uint32_t style = _params.style;
 
   BLContextCreateInfo createInfo {};
+  createInfo.threadCount = _threadCount;
+
   if (_cpuFeatures) {
     createInfo.flags = BL_CONTEXT_CREATE_FLAG_ISOLATED_JIT |
                        BL_CONTEXT_CREATE_FLAG_OVERRIDE_CPU_FEATURES;

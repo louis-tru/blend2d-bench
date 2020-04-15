@@ -22,10 +22,10 @@ BenchModule::~BenchModule() {}
 // [bench::BenchModule - Run]
 // ============================================================================
 
-static void BenchModule_onDoShapeHelper(BenchModule* module, bool stroke, uint32_t shapeId) {
+static void BenchModule_onDoShapeHelper(BenchModule* mod, bool stroke, uint32_t shapeId) {
   ShapesData shape;
   getShapesData(shape, shapeId);
-  module->onDoShape(stroke, shape.data, shape.count);
+  mod->onDoShape(stroke, shape.data, shape.count);
 }
 
 void BenchModule::run(const BenchApp& app, const BenchParams& params) {
@@ -72,8 +72,8 @@ void BenchModule::run(const BenchApp& app, const BenchParams& params) {
     case kBenchIdStrokeShapeWorld  : BenchModule_onDoShapeHelper(this, true, ShapesData::kIdWorld); break;
   }
 
-  _ticks = BLRuntime::getTickCount() - _ticks;
   onAfterRun();
+  _ticks = BLRuntime::getTickCount() - _ticks;
 }
 
 } // {blbench}

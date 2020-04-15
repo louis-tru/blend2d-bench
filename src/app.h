@@ -61,7 +61,7 @@ struct BenchApp {
   // --------------------------------------------------------------------------
 
   int run();
-  int runModule(BenchModule& module, BenchParams& params);
+  int runModule(BenchModule& mod, BenchParams& params);
 };
 
 } // {blbench}

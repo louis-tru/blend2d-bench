@@ -14,6 +14,7 @@ class Blend2DModule : public BenchModule {
 public:
 
   BLContext _context;
+  uint32_t _threadCount;
   uint32_t _cpuFeatures;
 
   // Initialized by onBeforeRun().
@@ -24,7 +25,7 @@ public:
   // [Construction / Destruction]
   // --------------------------------------------------------------------------
 
-  explicit Blend2DModule(uint32_t cpuFeatures = 0);
+  explicit Blend2DModule(uint32_t threadCount = 0, uint32_t cpuFeatures = 0);
   virtual ~Blend2DModule();
 
   // --------------------------------------------------------------------------
