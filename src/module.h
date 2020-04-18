@@ -30,6 +30,7 @@ enum BenchId {
   kBenchIdFillRotatedRect,
   kBenchIdFillSmoothRound,
   kBenchIdFillRotatedRound,
+  kBenchIdFillTriangle,
   kBenchIdFillPolygon10NZ,
   kBenchIdFillPolygon10EO,
   kBenchIdFillPolygon20NZ,
@@ -43,6 +44,7 @@ enum BenchId {
   kBenchIdStrokeRotatedRect,
   kBenchIdStrokeSmoothRound,
   kBenchIdStrokeRotatedRound,
+  kBenchIdStrokeTriangle,
   kBenchIdStrokePolygon10,
   kBenchIdStrokePolygon20,
   kBenchIdStrokePolygon40,
@@ -181,8 +183,8 @@ struct BenchModule {
   char _name[64];
   //! Current parameters.
   BenchParams _params;
-  //! Current ticks.
-  uint32_t _ticks;
+  //! Current duration.
+  uint64_t _duration;
 
   //! Random number generator for coordinates (points or rectangles).
   BenchRandom _rndCoord;

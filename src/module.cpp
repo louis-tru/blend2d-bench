@@ -2,6 +2,8 @@
 #include "./module.h"
 #include "./shapes_data.h"
 
+#include <chrono>
+
 namespace blbench {
 
 // ============================================================================
@@ -11,7 +13,7 @@ namespace blbench {
 BenchModule::BenchModule()
   : _name(),
     _params(),
-    _ticks(0),
+    _duration(0),
     _rndCoord(0x19AE0DDAE3FA7391ull),
     _rndColor(0x94BD7A499AD10011ull),
     _rndExtra(0x1ABD9CC9CAF0F123ull),
@@ -45,7 +47,7 @@ void BenchModule::run(const BenchApp& app, const BenchParams& params) {
   }
 
   onBeforeRun();
-  _ticks = BLRuntime::getTickCount();
+  auto start = std::chrono::high_resolution_clock::now();
 
   switch (_params.benchId) {
     case kBenchIdFillAlignedRect   : onDoRectAligned(false); break;
@@ -53,6 +55,7 @@ void BenchModule::run(const BenchApp& app, const BenchParams& params) {
     case kBenchIdFillRotatedRect   : onDoRectRotated(false); break;
     case kBenchIdFillSmoothRound   : onDoRoundSmooth(false); break;
     case kBenchIdFillRotatedRound  : onDoRoundRotated(false); break;
+    case kBenchIdFillTriangle      : onDoPolygon(1, 3); break;
     case kBenchIdFillPolygon10NZ   : onDoPolygon(0, 10); break;
     case kBenchIdFillPolygon10EO   : onDoPolygon(1, 10); break;
     case kBenchIdFillPolygon20NZ   : onDoPolygon(0, 20); break;
@@ -66,6 +69,7 @@ void BenchModule::run(const BenchApp& app, const BenchParams& params) {
     case kBenchIdStrokeRotatedRect : onDoRectRotated(true); break;
     case kBenchIdStrokeSmoothRound : onDoRoundSmooth(true); break;
     case kBenchIdStrokeRotatedRound: onDoRoundRotated(true); break;
+    case kBenchIdStrokeTriangle    : onDoPolygon(2, 3); break;
     case kBenchIdStrokePolygon10   : onDoPolygon(2, 10); break;
     case kBenchIdStrokePolygon20   : onDoPolygon(2, 20); break;
     case kBenchIdStrokePolygon40   : onDoPolygon(2, 40); break;
@@ -73,7 +77,10 @@ void BenchModule::run(const BenchApp& app, const BenchParams& params) {
   }
 
   onAfterRun();
-  _ticks = BLRuntime::getTickCount() - _ticks;
+
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = end - start;
+  _duration = uint64_t(elapsed.count() * 1000000);
 }
 
 } // {blbench}

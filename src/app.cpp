@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <type_traits>
 
 #include "./app.h"
 #include "./images_data.h"
@@ -31,6 +32,7 @@ static const char* benchIdNameList[] = {
   "FillRectRot",
   "FillRoundU",
   "FillRoundRot",
+  "FillTriangle",
   "FillPolyNZi10",
   "FillPolyEOi10",
   "FillPolyNZi20",
@@ -43,6 +45,7 @@ static const char* benchIdNameList[] = {
   "StrokeRectRot",
   "StrokeRoundU",
   "StrokeRoundRot",
+  "StrokeTriangle",
   "StrokePoly10",
   "StrokePoly20",
   "StrokePoly40",
@@ -101,7 +104,7 @@ static const int benchShapeSizeList[] = {
 
 const char benchBorderStr[] = "+--------------------+-------------+---------------+-------+-------+-------+-------+-------+-------+\n";
 const char benchHeaderStr[] = "|%-20s"             "| CompOp      | Style         | 8x8   | 16x16 | 32x32 | 64x64 |128x128|256x256|\n";
-const char benchDataFmt[]   = "|%-20s"             "| %-12s"     "| %-14s"       "| %-6u""| %-6u""| %-6u""| %-6u""| %-6u""| %-6u""|\n";
+const char benchDataFmt[]   = "|%-20s"             "| %-12s"     "| %-14s"       "| %-6s""| %-6s""| %-6s""| %-6s""| %-6s""| %-6s""|\n";
 
 static uint32_t searchStringList(const char** listData, size_t listSize, const char* key) {
   for (size_t i = 0; i < listSize; i++)
@@ -109,6 +112,17 @@ static uint32_t searchStringList(const char** listData, size_t listSize, const c
       return uint32_t(i);
   return 0xFFFFFFFFu;
 }
+
+struct DurationFormat {
+  char data[64];
+
+  inline void format(uint64_t duration) {
+    if (duration < 10000)
+      snprintf(data, 64, "%llu.%llu", (unsigned long long)(duration) / 1000, (unsigned long long)((duration / 100) % 10));
+    else
+      snprintf(data, 64, "%llu", (unsigned long long )(duration / 1000));
+  }
+};
 
 // ============================================================================
 // [bench::BenchApp - Construction / Destruction]
@@ -348,8 +362,9 @@ int BenchApp::runModule(BenchModule& mod, BenchParams& params) {
   char fileName[256];
   char styleString[128];
 
-  uint32_t ticksLocal[ARRAY_SIZE(benchShapeSizeList)];
-  uint32_t ticksTotal[ARRAY_SIZE(benchShapeSizeList)];
+  uint64_t localDuration[ARRAY_SIZE(benchShapeSizeList)];
+  uint64_t totalDuration[ARRAY_SIZE(benchShapeSizeList)];
+  DurationFormat durationFormat[ARRAY_SIZE(benchShapeSizeList)];
 
   uint32_t compOpFirst = BL_COMP_OP_SRC_OVER;
   uint32_t compOpLast  = BL_COMP_OP_SRC_COPY;
@@ -378,7 +393,7 @@ int BenchApp::runModule(BenchModule& mod, BenchParams& params) {
         if (x != NULL) x[0] = '\0';
       }
 
-      memset(ticksTotal, 0, sizeof(ticksTotal));
+      memset(totalDuration, 0, sizeof(totalDuration));
 
       printf(benchBorderStr);
       printf(benchHeaderStr, mod._name);
@@ -390,16 +405,16 @@ int BenchApp::runModule(BenchModule& mod, BenchParams& params) {
         for (uint32_t sizeId = 0; sizeId < ARRAY_SIZE(benchShapeSizeList); sizeId++) {
           params.shapeSize = benchShapeSizeList[sizeId];
 
-          uint32_t ticks = 0xFFFFFFFFu;
+          uint64_t duration = std::numeric_limits<uint64_t>::max();
           for (uint32_t attempt = 0; attempt < _repeat; attempt++) {
             mod.run(*this, params);
 
-            if (ticks > mod._ticks)
-              ticks = mod._ticks;
+            if (duration > mod._duration)
+              duration = mod._duration;
           }
 
-          ticksLocal[sizeId]  = ticks;
-          ticksTotal[sizeId] += ticks;
+          localDuration[sizeId]  = duration;
+          totalDuration[sizeId] += duration;
 
           if (_saveImages) {
             // Save only the last two as these are easier to compare visually.
@@ -415,29 +430,35 @@ int BenchApp::runModule(BenchModule& mod, BenchParams& params) {
           }
         }
 
+        for (uint32_t sizeId = 0; sizeId < ARRAY_SIZE(benchShapeSizeList); sizeId++)
+          durationFormat[sizeId].format(localDuration[sizeId]);
+
         printf(benchDataFmt,
           benchIdNameList[params.benchId],
           benchCompOpList[params.compOp],
           styleString,
-          ticksLocal[0],
-          ticksLocal[1],
-          ticksLocal[2],
-          ticksLocal[3],
-          ticksLocal[4],
-          ticksLocal[5]);
+          durationFormat[0].data,
+          durationFormat[1].data,
+          durationFormat[2].data,
+          durationFormat[3].data,
+          durationFormat[4].data,
+          durationFormat[5].data);
       }
+
+      for (uint32_t sizeId = 0; sizeId < ARRAY_SIZE(benchShapeSizeList); sizeId++)
+        durationFormat[sizeId].format(totalDuration[sizeId]);
 
       printf(benchBorderStr);
       printf(benchDataFmt,
         "Total",
         benchCompOpList[params.compOp],
         styleString,
-        ticksTotal[0],
-        ticksTotal[1],
-        ticksTotal[2],
-        ticksTotal[3],
-        ticksTotal[4],
-        ticksTotal[5]);
+        durationFormat[0].data,
+        durationFormat[1].data,
+        durationFormat[2].data,
+        durationFormat[3].data,
+        durationFormat[4].data,
+        durationFormat[5].data);
       printf(benchBorderStr);
       printf("\n");
     }
