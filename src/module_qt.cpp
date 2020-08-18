@@ -386,7 +386,7 @@ void QtModule::onDoRectRotated(bool stroke) {
       }
     }
 
-    _qtContext->resetMatrix();
+    _qtContext->resetTransform();
   }
 }
 
@@ -472,7 +472,7 @@ void QtModule::onDoRoundRotated(bool stroke) {
       std::min(rect.w * 0.5, radius),
       std::min(rect.h * 0.5, radius));
 
-    _qtContext->resetMatrix();
+    _qtContext->resetTransform();
   }
 }
 

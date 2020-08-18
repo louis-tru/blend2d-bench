@@ -145,7 +145,7 @@ void Blend2DModule::onBeforeRun() {
   createInfo.threadCount = _threadCount;
 
   if (_cpuFeatures) {
-    createInfo.flags = BL_CONTEXT_CREATE_FLAG_ISOLATED_JIT |
+    createInfo.flags = BL_CONTEXT_CREATE_FLAG_ISOLATED_JIT_RUNTIME |
                        BL_CONTEXT_CREATE_FLAG_OVERRIDE_CPU_FEATURES;
     createInfo.cpuFeatures = _cpuFeatures;
   }
