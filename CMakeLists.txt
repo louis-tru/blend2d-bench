@@ -39,7 +39,7 @@ set(BLBENCH_SRC
 
 set(BLEND2D_STATIC TRUE)
 include("${BLEND2D_DIR}/CMakeLists.txt")
-list(APPEND BLBENCH_LIBRARIES Blend2D::Blend2D)
+list(APPEND BLBENCH_LIBRARIES blend2d::blend2d)
 
 # Bench Module - AGG
 # -------------------
