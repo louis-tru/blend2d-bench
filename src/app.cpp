@@ -402,7 +402,7 @@ int BenchApp::runModule(BenchModule& mod, BenchParams& params) {
   for (uint32_t compOp = compOpFirst; compOp <= compOpLast; compOp++) {
     if (!mod.supportsCompOp(compOp))
       continue;
-    params.compOp = compOp;
+    params.compOp = BLCompOp(compOp);
 
     for (uint32_t style = 0; style < kBenchStyleCount; style++) {
       if (!isStyleEnabled(style) || !mod.supportsStyle(style))

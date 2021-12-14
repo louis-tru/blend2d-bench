@@ -103,11 +103,11 @@ struct BenchParams {
   uint32_t screenW;
   uint32_t screenH;
 
-  uint32_t format;
+  BLFormat format;
   uint32_t quantity;
 
   uint32_t benchId;
-  uint32_t compOp;
+  BLCompOp compOp;
   uint32_t style;
   uint32_t shapeSize;
 

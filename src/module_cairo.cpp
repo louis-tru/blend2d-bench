@@ -134,7 +134,7 @@ void CairoModule::setupStyle(uint32_t style, const RectT& rect) {
   switch (style) {
     case kBenchStyleSolid: {
       BLRgba32 c(_rndColor.nextRgba32());
-      cairo_set_source_rgba(_cairoContext, u8ToUnit(c.r), u8ToUnit(c.g), u8ToUnit(c.b), u8ToUnit(c.a));
+      cairo_set_source_rgba(_cairoContext, u8ToUnit(c.r()), u8ToUnit(c.g()), u8ToUnit(c.b()), u8ToUnit(c.a()));
       return;
     }
 
@@ -160,9 +160,9 @@ void CairoModule::setupStyle(uint32_t style, const RectT& rect) {
         double y1 = rect.y + rect.h * 0.8;
         pattern = cairo_pattern_create_linear(x0, y0, x1, y1);
 
-        cairo_pattern_add_color_stop_rgba(pattern, 0.0, u8ToUnit(c0.r), u8ToUnit(c0.g), u8ToUnit(c0.b), u8ToUnit(c0.a));
-        cairo_pattern_add_color_stop_rgba(pattern, 0.5, u8ToUnit(c1.r), u8ToUnit(c1.g), u8ToUnit(c1.b), u8ToUnit(c1.a));
-        cairo_pattern_add_color_stop_rgba(pattern, 1.0, u8ToUnit(c2.r), u8ToUnit(c2.g), u8ToUnit(c2.b), u8ToUnit(c2.a));
+        cairo_pattern_add_color_stop_rgba(pattern, 0.0, u8ToUnit(c0.r()), u8ToUnit(c0.g()), u8ToUnit(c0.b()), u8ToUnit(c0.a()));
+        cairo_pattern_add_color_stop_rgba(pattern, 0.5, u8ToUnit(c1.r()), u8ToUnit(c1.g()), u8ToUnit(c1.b()), u8ToUnit(c1.a()));
+        cairo_pattern_add_color_stop_rgba(pattern, 1.0, u8ToUnit(c2.r()), u8ToUnit(c2.g()), u8ToUnit(c2.b()), u8ToUnit(c2.a()));
       }
       else {
         // Radial gradient.
@@ -173,9 +173,9 @@ void CairoModule::setupStyle(uint32_t style, const RectT& rect) {
         pattern = cairo_pattern_create_radial(x, y, r, x - r / 2, y - r / 2, 0.0);
 
         // Color stops in Cairo's radial gradient are reverse to Blend/Qt.
-        cairo_pattern_add_color_stop_rgba(pattern, 0.0, u8ToUnit(c2.r), u8ToUnit(c2.g), u8ToUnit(c2.b), u8ToUnit(c2.a));
-        cairo_pattern_add_color_stop_rgba(pattern, 0.5, u8ToUnit(c1.r), u8ToUnit(c1.g), u8ToUnit(c1.b), u8ToUnit(c1.a));
-        cairo_pattern_add_color_stop_rgba(pattern, 1.0, u8ToUnit(c0.r), u8ToUnit(c0.g), u8ToUnit(c0.b), u8ToUnit(c0.a));
+        cairo_pattern_add_color_stop_rgba(pattern, 0.0, u8ToUnit(c2.r()), u8ToUnit(c2.g()), u8ToUnit(c2.b()), u8ToUnit(c2.a()));
+        cairo_pattern_add_color_stop_rgba(pattern, 0.5, u8ToUnit(c1.r()), u8ToUnit(c1.g()), u8ToUnit(c1.b()), u8ToUnit(c1.a()));
+        cairo_pattern_add_color_stop_rgba(pattern, 1.0, u8ToUnit(c0.r()), u8ToUnit(c0.g()), u8ToUnit(c0.b()), u8ToUnit(c0.a()));
       }
 
       cairo_pattern_set_extend(pattern, cairo_extend_t(_patternExtend));

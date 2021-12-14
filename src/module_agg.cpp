@@ -185,7 +185,7 @@ void AGGModule::renderScanlines(const BLRect& rect, uint32_t style) {
   switch (style) {
     case kBenchStyleSolid: {
       BLRgba32 c(_rndColor.nextRgba32());
-      agg::rgba8 color(uint8_t(c.r), uint8_t(c.g), uint8_t(c.b), uint8_t(c.a));
+      agg::rgba8 color(uint8_t(c.r()), uint8_t(c.g()), uint8_t(c.b()), uint8_t(c.a()));
       color.premultiply();
       _rendererSolid.color(color);
       agg::render_scanlines(_rasterizer, _scanline, _rendererSolid);
@@ -200,7 +200,7 @@ void AGGModule::fillRectAA(int x, int y, int w, int h, uint32_t style) {
   switch (style) {
     case kBenchStyleSolid: {
       BLRgba32 c(_rndColor.nextRgba32());
-      agg::rgba8 color(uint8_t(c.r), uint8_t(c.g), uint8_t(c.b), uint8_t(c.a));
+      agg::rgba8 color(uint8_t(c.r()), uint8_t(c.g()), uint8_t(c.b()), uint8_t(c.a()));
       color.premultiply();
       _rendererBase.blend_bar(x, y, x + w, y + h, color, 0xFFu);
       break;

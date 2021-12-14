@@ -188,7 +188,7 @@ void Blend2DModule::onDoRectAligned(bool stroke) {
   BLSizeI bounds(_params.screenW, _params.screenH);
 
   uint32_t style = _params.style;
-  uint32_t opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
+  BLContextOpType opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
 
   int wh = _params.shapeSize;
 
@@ -263,7 +263,7 @@ void Blend2DModule::onDoRectSmooth(bool stroke) {
   BLSize bounds(_params.screenW, _params.screenH);
 
   uint32_t style = _params.style;
-  uint32_t opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
+  BLContextOpType opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
 
   double wh = _params.shapeSize;
 
@@ -338,7 +338,7 @@ void Blend2DModule::onDoRectRotated(bool stroke) {
   BLSize bounds(_params.screenW, _params.screenH);
 
   uint32_t style = _params.style;
-  uint32_t opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
+  BLContextOpType opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
 
   double cx = double(_params.screenW) * 0.5;
   double cy = double(_params.screenH) * 0.5;
@@ -424,7 +424,7 @@ void Blend2DModule::onDoRoundSmooth(bool stroke) {
   BLSize bounds(_params.screenW, _params.screenH);
 
   uint32_t style = _params.style;
-  uint32_t opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
+  BLContextOpType opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
 
   double wh = _params.shapeSize;
 
@@ -509,7 +509,7 @@ void Blend2DModule::onDoRoundRotated(bool stroke) {
   BLSize bounds(_params.screenW, _params.screenH);
 
   uint32_t style = _params.style;
-  uint32_t opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
+  BLContextOpType opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
 
   double cx = double(_params.screenW) * 0.5;
   double cy = double(_params.screenH) * 0.5;
@@ -604,7 +604,7 @@ void Blend2DModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
   BLSizeI bounds(_params.screenW - _params.shapeSize,
                  _params.screenH - _params.shapeSize);
   uint32_t style = _params.style;
-  uint32_t opType = mode == 2 ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
+  BLContextOpType opType = mode == 2 ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
 
   enum { kPointCapacity = 128 };
   if (complexity > kPointCapacity)
@@ -673,7 +673,7 @@ void Blend2DModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {
   BLSizeI bounds(_params.screenW - _params.shapeSize,
                  _params.screenH - _params.shapeSize);
   uint32_t style = _params.style;
-  uint32_t opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
+  BLContextOpType opType = stroke ? BL_CONTEXT_OP_TYPE_STROKE : BL_CONTEXT_OP_TYPE_FILL;
 
   BLPath path;
   bool start = true;

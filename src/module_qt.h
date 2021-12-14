@@ -40,7 +40,7 @@ struct QtUtil {
   static uint32_t toQtOperator(uint32_t compOp);
 
   static inline QColor toQColor(const BLRgba32& rgba) {
-    return QColor(rgba.r, rgba.g, rgba.b, rgba.a);
+    return QColor(rgba.r(), rgba.g(), rgba.b(), rgba.a());
   }
 };
 

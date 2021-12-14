@@ -41,8 +41,8 @@ public:
   uint32_t _cpuFeatures;
 
   // Initialized by onBeforeRun().
-  uint32_t _gradientType;
-  uint32_t _gradientExtend;
+  BLGradientType _gradientType;
+  BLExtendMode _gradientExtend;
 
   // --------------------------------------------------------------------------
   // [Construction / Destruction]
