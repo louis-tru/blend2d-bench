@@ -31,7 +31,7 @@
 
 #if defined(BLBENCH_ENABLE_AGG)
   #include "./module_agg.h"
-#endif // BLBENCH_ENABLE_CAIRO
+#endif // BLBENCH_ENABLE_AGG
 
 #if defined(BLBENCH_ENABLE_CAIRO)
   #include "./module_cairo.h"

@@ -224,6 +224,7 @@ if(CAIRO_FOUND)
   list(APPEND BLBENCH_LIBRARIES ${CAIRO_LIBRARIES})
   list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_CAIRO)
   list(APPEND BLBENCH_INCLUDE_DIRS ${CAIRO_INCLUDE_DIRS})
+  # link_directories("/usr/local/lib" "${LIBRARY_PATH}")
 endif()
 
 # Bench Module - Qt5
@@ -233,9 +234,8 @@ pkg_check_modules(QT5 Qt5Gui)
 if(QT5_FOUND)
   message("-- [blbench] adding support for Qt5")
   list(APPEND BLBENCH_LIBRARIES ${QT5_LIBRARIES})
-  list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_QT)
+  list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_QT QT_GUI_LIB QT_CORE_LIB)
   list(APPEND BLBENCH_INCLUDE_DIRS ${QT5_INCLUDE_DIRS} ${QT5_PREFIX}/include)
-  list(APPEND BLBENCH_DEFINITIONS QT_GUI_LIB QT_CORE_LIB)
   IF (APPLE)
     list(APPEND BLBENCH_LINK_FLAGS "-F${QT5_PREFIX}/lib -framework QtCore -framework QtGui")
   ENDIF()
@@ -266,3 +266,8 @@ set_property(TARGET bl_bench PROPERTY LINK_FLAGS "${BLBENCH_LINK_FLAGS}")
 set_property(TARGET bl_bench PROPERTY COMPILE_FLAGS "${BLBENCH_CFLAGS}")
 
 target_link_libraries(bl_bench ${BLBENCH_LIBRARIES})
+
+# mkdir build
+# cd build
+# cmake ..
+# VERBOSE=1 make
