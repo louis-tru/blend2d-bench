@@ -41,6 +41,14 @@
   #include "./module_qt.h"
 #endif // BLBENCH_ENABLE_QT
 
+#if defined(BLBENCH_ENABLE_SKIA)
+  #include "./module_skia.h"
+#endif // BLBENCH_ENABLE_SKIA
+
+#if defined(BLBENCH_ENABLE_PLUTOVG)
+  #include "./module_plutovg.h"
+#endif // BLBENCH_ENABLE_PLUTOVG
+
 #define ARRAY_SIZE(X) uint32_t(sizeof(X) / sizeof(X[0]))
 
 namespace blbench {
@@ -376,6 +384,22 @@ int BenchApp::run() {
       runModule(mod, params);
     }
     #endif
+
+    #if defined(BLBENCH_ENABLE_SKIA)
+    {
+      SkiaModule mod;
+      runModule(mod, params);
+    }
+    #endif
+
+    #if defined(BLBENCH_ENABLE_PLUTOVG)
+    {
+      PlutovgModule mod;
+      runModule(mod, params);
+    }
+    #endif
+
+    
   }
 
   return 0;

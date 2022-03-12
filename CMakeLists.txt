@@ -15,6 +15,11 @@ set(BLEND2D_DIR "${BLBENCH_DIR}/../blend2d" CACHE PATH "Location of 'blend2d'")
 set(BLBENCH_INCLUDE_DIRS "")
 set(BLBENCH_DEFINITIONS "")
 set(BLBENCH_LIBRARIES "")
+set(BLBENCH_CFLAGS "")
+set(BLBENCH_LINK_FLAGS "")
+
+#add_compile_options(-Winconsistent-missing-override)
+#set(CMAKE_VERBOSE_MAKEFILEON ON)
 
 set(BLBENCH_SRC
   src/app.cpp
@@ -30,6 +35,10 @@ set(BLBENCH_SRC
   src/module_cairo.h
   src/module_qt.cpp
   src/module_qt.h
+  src/module_skia.cpp
+  src/module_skia.h
+  src/module_plutovg.cpp
+  src/module_plutovg.h
   src/shapes_data.cpp
   src/shapes_data.h
 )
@@ -220,12 +229,31 @@ endif()
 # Bench Module - Qt5
 # ------------------
 
-find_package(Qt5Gui)
-if(Qt5Gui_FOUND)
+pkg_check_modules(QT5 Qt5Gui)
+if(QT5_FOUND)
   message("-- [blbench] adding support for Qt5")
-  list(APPEND BLBENCH_LIBRARIES Qt5::Gui)
+  list(APPEND BLBENCH_LIBRARIES ${QT5_LIBRARIES})
   list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_QT)
+  list(APPEND BLBENCH_INCLUDE_DIRS ${QT5_INCLUDE_DIRS} ${QT5_PREFIX}/include)
+  list(APPEND BLBENCH_DEFINITIONS QT_GUI_LIB QT_CORE_LIB)
+  IF (APPLE)
+    list(APPEND BLBENCH_LINK_FLAGS "-F${QT5_PREFIX}/lib -framework QtCore -framework QtGui")
+  ENDIF()
 endif()
+
+# Bench Module - Skia
+# ------------------
+
+# Bench Module - Plutovg
+# ------------------
+
+#find_package(PLUTOVG, plutovg)
+#if(Plutovg_FOUND)
+#  message("-- [blbench] adding support for plutovg")
+#  list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_PLUTOVG)
+#  list(APPEND BLBENCH_INCLUDE_DIRS ${PLUTOVG_INCLUDE_DIRS})
+#  list(APPEND BLBENCH_LIBRARIES ${PLUTOVG_LIBRARIES})
+#endif()
 
 # Bench Executable
 # ----------------
@@ -234,4 +262,7 @@ add_executable(bl_bench ${BLBENCH_SRC} ${AGG_SRC})
 set_property(TARGET bl_bench PROPERTY CXX_VISIBILITY_PRESET hidden)
 set_property(TARGET bl_bench PROPERTY COMPILE_DEFINITIONS "${BLBENCH_DEFINITIONS}")
 set_property(TARGET bl_bench PROPERTY INCLUDE_DIRECTORIES "${BLBENCH_INCLUDE_DIRS}")
+set_property(TARGET bl_bench PROPERTY LINK_FLAGS "${BLBENCH_LINK_FLAGS}")
+set_property(TARGET bl_bench PROPERTY COMPILE_FLAGS "${BLBENCH_CFLAGS}")
+
 target_link_libraries(bl_bench ${BLBENCH_LIBRARIES})
