@@ -249,13 +249,10 @@ endif()
 # Bench Module - Plutovg
 # ------------------
 
-#find_package(PLUTOVG, plutovg)
-#if(Plutovg_FOUND)
-#  message("-- [blbench] adding support for plutovg")
-#  list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_PLUTOVG)
-#  list(APPEND BLBENCH_INCLUDE_DIRS ${PLUTOVG_INCLUDE_DIRS})
-#  list(APPEND BLBENCH_LIBRARIES ${PLUTOVG_LIBRARIES})
-#endif()
+message("-- [blbench] adding support for plutovg")
+list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_PLUTOVG)
+list(APPEND BLBENCH_LIBRARIES plutovg)
+add_subdirectory(3rdparty/plutovg)
 
 # Bench Executable
 # ----------------

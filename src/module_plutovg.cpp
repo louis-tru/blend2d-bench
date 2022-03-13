@@ -24,7 +24,7 @@
 #ifdef BLBENCH_ENABLE_PLUTOVG
 
 #include "./app.h"
-#include "./module_skia.h"
+#include "./module_plutovg.h"
 
 #include <algorithm>
 
@@ -36,9 +36,9 @@ namespace blbench {
 
 PlutovgModule::PlutovgModule() {
 	strcpy(_name, "Plutovg");
-	_PlutovgSurface = NULL;
-	_PlutovgContext = NULL;
-	memset(_PlutovgSprites, 0, sizeof(_PlutovgSprites));
+	// _PlutovgSurface = NULL;
+	// _PlutovgContext = NULL;
+	// memset(_PlutovgSprites, 0, sizeof(_PlutovgSprites));
 }
 PlutovgModule::~PlutovgModule() {}
 
@@ -124,101 +124,103 @@ void PlutovgModule::setupStyle(uint32_t style, const RectT& rect) {
 // ============================================================================
 
 bool PlutovgModule::supportsCompOp(uint32_t compOp) const {
-	return PlutovgUtils::toPlutovgOperator(compOp) != 0xFFFFFFFFu;
+	// return PlutovgUtils::toPlutovgOperator(compOp) != 0xFFFFFFFFu;
+	return false;
 }
 
 bool PlutovgModule::supportsStyle(uint32_t style) const {
-	return style == kBenchStyleSolid         ||
-				 style == kBenchStyleLinearPad     ||
-				 style == kBenchStyleLinearRepeat  ||
-				 style == kBenchStyleLinearReflect ||
-				 style == kBenchStyleRadialPad     ||
-				 style == kBenchStyleRadialRepeat  ||
-				 style == kBenchStyleRadialReflect ||
-				 style == kBenchStylePatternNN     ||
-				 style == kBenchStylePatternBI     ;
+	// return style == kBenchStyleSolid         ||
+	// 			 style == kBenchStyleLinearPad     ||
+	// 			 style == kBenchStyleLinearRepeat  ||
+	// 			 style == kBenchStyleLinearReflect ||
+	// 			 style == kBenchStyleRadialPad     ||
+	// 			 style == kBenchStyleRadialRepeat  ||
+	// 			 style == kBenchStyleRadialReflect ||
+	// 			 style == kBenchStylePatternNN     ||
+	// 			 style == kBenchStylePatternBI     ;
+	return false;
 }
 
 void PlutovgModule::onBeforeRun() {
-	int w = int(_params.screenW);
-	int h = int(_params.screenH);
-	uint32_t style = _params.style;
+	// int w = int(_params.screenW);
+	// int h = int(_params.screenH);
+	// uint32_t style = _params.style;
 
-	// Initialize the sprites.
-	for (uint32_t i = 0; i < kBenchNumSprites; i++) {
-		const BLImage& sprite = _sprites[i];
+	// // Initialize the sprites.
+	// for (uint32_t i = 0; i < kBenchNumSprites; i++) {
+	// 	const BLImage& sprite = _sprites[i];
 
-		BLImageData spriteData;
-		sprite.getData(&spriteData);
+	// 	BLImageData spriteData;
+	// 	sprite.getData(&spriteData);
 
-		int stride = int(spriteData.stride);
-		int format = PlutovgUtils::toPlutovgFormat(spriteData.format);
-		unsigned char* pixels = static_cast<unsigned char*>(spriteData.pixelData);
+	// 	int stride = int(spriteData.stride);
+	// 	int format = PlutovgUtils::toPlutovgFormat(spriteData.format);
+	// 	unsigned char* pixels = static_cast<unsigned char*>(spriteData.pixelData);
 
-		Plutovg_surface_t* PlutovgSprite = Plutovg_image_surface_create_for_data(
-			pixels, Plutovg_format_t(format), spriteData.size.w, spriteData.size.h, stride);
+	// 	Plutovg_surface_t* PlutovgSprite = Plutovg_image_surface_create_for_data(
+	// 		pixels, Plutovg_format_t(format), spriteData.size.w, spriteData.size.h, stride);
 
-		_PlutovgSprites[i] = PlutovgSprite;
-	}
+	// 	_PlutovgSprites[i] = PlutovgSprite;
+	// }
 
-	// Initialize the surface and the context.
-	{
-		BLImageData surfaceData;
-		_surface.create(w, h, _params.format);
-		_surface.makeMutable(&surfaceData);
+	// // Initialize the surface and the context.
+	// {
+	// 	BLImageData surfaceData;
+	// 	_surface.create(w, h, _params.format);
+	// 	_surface.makeMutable(&surfaceData);
 
-		int stride = int(surfaceData.stride);
-		int format = PlutovgUtils::toPlutovgFormat(surfaceData.format);
-		unsigned char* pixels = (unsigned char*)surfaceData.pixelData;
+	// 	int stride = int(surfaceData.stride);
+	// 	int format = PlutovgUtils::toPlutovgFormat(surfaceData.format);
+	// 	unsigned char* pixels = (unsigned char*)surfaceData.pixelData;
 
-		_PlutovgSurface = Plutovg_image_surface_create_for_data(
-			pixels, Plutovg_format_t(format), w, h, stride);
+	// 	_PlutovgSurface = Plutovg_image_surface_create_for_data(
+	// 		pixels, Plutovg_format_t(format), w, h, stride);
 
-		if (_PlutovgSurface == NULL)
-			return;
+	// 	if (_PlutovgSurface == NULL)
+	// 		return;
 
-		_PlutovgContext = Plutovg_create(_PlutovgSurface);
-		if (_PlutovgContext == NULL)
-			return;
-	}
+	// 	_PlutovgContext = Plutovg_create(_PlutovgSurface);
+	// 	if (_PlutovgContext == NULL)
+	// 		return;
+	// }
 
-	// Setup the context.
-	Plutovg_set_operator(_PlutovgContext, Plutovg_OPERATOR_CLEAR);
-	Plutovg_rectangle(_PlutovgContext, 0, 0, w, h);
-	Plutovg_fill(_PlutovgContext);
+	// // Setup the context.
+	// Plutovg_set_operator(_PlutovgContext, Plutovg_OPERATOR_CLEAR);
+	// Plutovg_rectangle(_PlutovgContext, 0, 0, w, h);
+	// Plutovg_fill(_PlutovgContext);
 
-	Plutovg_set_operator(_PlutovgContext, Plutovg_operator_t(PlutovgUtils::toPlutovgOperator(_params.compOp)));
-	Plutovg_set_line_width(_PlutovgContext, _params.strokeWidth);
+	// Plutovg_set_operator(_PlutovgContext, Plutovg_operator_t(PlutovgUtils::toPlutovgOperator(_params.compOp)));
+	// Plutovg_set_line_width(_PlutovgContext, _params.strokeWidth);
 
-	// Setup globals.
-	_patternExtend = Plutovg_EXTEND_REPEAT;
-	_patternFilter = Plutovg_FILTER_NEAREST;
+	// // Setup globals.
+	// _patternExtend = Plutovg_EXTEND_REPEAT;
+	// _patternFilter = Plutovg_FILTER_NEAREST;
 
-	switch (style) {
-		case kBenchStyleLinearPad      : _patternExtend = Plutovg_EXTEND_PAD     ; break;
-		case kBenchStyleLinearRepeat   : _patternExtend = Plutovg_EXTEND_REPEAT  ; break;
-		case kBenchStyleLinearReflect  : _patternExtend = Plutovg_EXTEND_REFLECT ; break;
-		case kBenchStyleRadialPad      : _patternExtend = Plutovg_EXTEND_PAD     ; break;
-		case kBenchStyleRadialRepeat   : _patternExtend = Plutovg_EXTEND_REPEAT  ; break;
-		case kBenchStyleRadialReflect  : _patternExtend = Plutovg_EXTEND_REFLECT ; break;
-		case kBenchStylePatternNN      : _patternFilter = Plutovg_FILTER_NEAREST ; break;
-		case kBenchStylePatternBI      : _patternFilter = Plutovg_FILTER_BILINEAR; break;
-	}
+	// switch (style) {
+	// 	case kBenchStyleLinearPad      : _patternExtend = Plutovg_EXTEND_PAD     ; break;
+	// 	case kBenchStyleLinearRepeat   : _patternExtend = Plutovg_EXTEND_REPEAT  ; break;
+	// 	case kBenchStyleLinearReflect  : _patternExtend = Plutovg_EXTEND_REFLECT ; break;
+	// 	case kBenchStyleRadialPad      : _patternExtend = Plutovg_EXTEND_PAD     ; break;
+	// 	case kBenchStyleRadialRepeat   : _patternExtend = Plutovg_EXTEND_REPEAT  ; break;
+	// 	case kBenchStyleRadialReflect  : _patternExtend = Plutovg_EXTEND_REFLECT ; break;
+	// 	case kBenchStylePatternNN      : _patternFilter = Plutovg_FILTER_NEAREST ; break;
+	// 	case kBenchStylePatternBI      : _patternFilter = Plutovg_FILTER_BILINEAR; break;
+	// }
 }
 
 void PlutovgModule::onAfterRun() {
-	// Free the surface & the context.
-	Plutovg_destroy(_PlutovgContext);
-	Plutovg_surface_destroy(_PlutovgSurface);
+	// // Free the surface & the context.
+	// Plutovg_destroy(_PlutovgContext);
+	// Plutovg_surface_destroy(_PlutovgSurface);
 
-	_PlutovgContext = NULL;
-	_PlutovgSurface = NULL;
+	// _PlutovgContext = NULL;
+	// _PlutovgSurface = NULL;
 
-	// Free the sprites.
-	for (uint32_t i = 0; i < kBenchNumSprites; i++) {
-		Plutovg_surface_destroy(_PlutovgSprites[i]);
-		_PlutovgSprites[i] = NULL;
-	}
+	// // Free the sprites.
+	// for (uint32_t i = 0; i < kBenchNumSprites; i++) {
+	// 	Plutovg_surface_destroy(_PlutovgSprites[i]);
+	// 	_PlutovgSprites[i] = NULL;
+	// }
 }
 
 void PlutovgModule::onDoRectAligned(bool stroke) {
@@ -243,183 +245,183 @@ void PlutovgModule::onDoRectAligned(bool stroke) {
 }
 
 void PlutovgModule::onDoRectSmooth(bool stroke) {
-	BLSize bounds(_params.screenW, _params.screenH);
-	uint32_t style = _params.style;
+	// BLSize bounds(_params.screenW, _params.screenH);
+	// uint32_t style = _params.style;
 
-	double wh = _params.shapeSize;
+	// double wh = _params.shapeSize;
 
-	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
-		BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
+	// for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
+	// 	BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
 
-		setupStyle<BLRect>(style, rect);
-		Plutovg_rectangle(_PlutovgContext, rect.x, rect.y, rect.w, rect.h);
+	// 	setupStyle<BLRect>(style, rect);
+	// 	Plutovg_rectangle(_PlutovgContext, rect.x, rect.y, rect.w, rect.h);
 
-		if (stroke)
-			Plutovg_stroke(_PlutovgContext);
-		else
-			Plutovg_fill(_PlutovgContext);
-	}
+	// 	if (stroke)
+	// 		Plutovg_stroke(_PlutovgContext);
+	// 	else
+	// 		Plutovg_fill(_PlutovgContext);
+	// }
 }
 
 void PlutovgModule::onDoRectRotated(bool stroke) {
-	BLSize bounds(_params.screenW, _params.screenH);
-	uint32_t style = _params.style;
+	// BLSize bounds(_params.screenW, _params.screenH);
+	// uint32_t style = _params.style;
 
-	double cx = double(_params.screenW) * 0.5;
-	double cy = double(_params.screenH) * 0.5;
-	double wh = _params.shapeSize;
-	double angle = 0.0;
+	// double cx = double(_params.screenW) * 0.5;
+	// double cy = double(_params.screenH) * 0.5;
+	// double wh = _params.shapeSize;
+	// double angle = 0.0;
 
-	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++, angle += 0.01) {
-		BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
+	// for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++, angle += 0.01) {
+	// 	BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
 
-		Plutovg_translate(_PlutovgContext, cx, cy);
-		Plutovg_rotate(_PlutovgContext, angle);
-		Plutovg_translate(_PlutovgContext, -cx, -cy);
+	// 	Plutovg_translate(_PlutovgContext, cx, cy);
+	// 	Plutovg_rotate(_PlutovgContext, angle);
+	// 	Plutovg_translate(_PlutovgContext, -cx, -cy);
 
-		setupStyle<BLRect>(style, rect);
-		Plutovg_rectangle(_PlutovgContext, rect.x, rect.y, rect.w, rect.h);
+	// 	setupStyle<BLRect>(style, rect);
+	// 	Plutovg_rectangle(_PlutovgContext, rect.x, rect.y, rect.w, rect.h);
 
-		if (stroke)
-			Plutovg_stroke(_PlutovgContext);
-		else
-			Plutovg_fill(_PlutovgContext);
+	// 	if (stroke)
+	// 		Plutovg_stroke(_PlutovgContext);
+	// 	else
+	// 		Plutovg_fill(_PlutovgContext);
 
-		Plutovg_identity_matrix(_PlutovgContext);
-	}
+	// 	Plutovg_identity_matrix(_PlutovgContext);
+	// }
 }
 
 void PlutovgModule::onDoRoundSmooth(bool stroke) {
-	BLSize bounds(_params.screenW, _params.screenH);
-	uint32_t style = _params.style;
+	// BLSize bounds(_params.screenW, _params.screenH);
+	// uint32_t style = _params.style;
 
-	double wh = _params.shapeSize;
+	// double wh = _params.shapeSize;
 
-	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
-		BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
-		double radius = _rndExtra.nextDouble(4.0, 40.0);
+	// for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
+	// 	BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
+	// 	double radius = _rndExtra.nextDouble(4.0, 40.0);
 
-		setupStyle<BLRect>(style, rect);
-		PlutovgUtils::roundRect(_PlutovgContext, rect, radius);
+	// 	setupStyle<BLRect>(style, rect);
+	// 	PlutovgUtils::roundRect(_PlutovgContext, rect, radius);
 
-		if (stroke)
-			Plutovg_stroke(_PlutovgContext);
-		else
-			Plutovg_fill(_PlutovgContext);
-	}
+	// 	if (stroke)
+	// 		Plutovg_stroke(_PlutovgContext);
+	// 	else
+	// 		Plutovg_fill(_PlutovgContext);
+	// }
 }
 
 void PlutovgModule::onDoRoundRotated(bool stroke) {
-	BLSize bounds(_params.screenW, _params.screenH);
-	uint32_t style = _params.style;
+	// BLSize bounds(_params.screenW, _params.screenH);
+	// uint32_t style = _params.style;
 
-	double cx = double(_params.screenW) * 0.5;
-	double cy = double(_params.screenH) * 0.5;
-	double wh = _params.shapeSize;
-	double angle = 0.0;
+	// double cx = double(_params.screenW) * 0.5;
+	// double cy = double(_params.screenH) * 0.5;
+	// double wh = _params.shapeSize;
+	// double angle = 0.0;
 
-	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++, angle += 0.01) {
-		BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
-		double radius = _rndExtra.nextDouble(4.0, 40.0);
+	// for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++, angle += 0.01) {
+	// 	BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
+	// 	double radius = _rndExtra.nextDouble(4.0, 40.0);
 
-		Plutovg_translate(_PlutovgContext, cx, cy);
-		Plutovg_rotate(_PlutovgContext, angle);
-		Plutovg_translate(_PlutovgContext, -cx, -cy);
+	// 	Plutovg_translate(_PlutovgContext, cx, cy);
+	// 	Plutovg_rotate(_PlutovgContext, angle);
+	// 	Plutovg_translate(_PlutovgContext, -cx, -cy);
 
-		setupStyle<BLRect>(style, rect);
-		PlutovgUtils::roundRect(_PlutovgContext, rect, radius);
+	// 	setupStyle<BLRect>(style, rect);
+	// 	PlutovgUtils::roundRect(_PlutovgContext, rect, radius);
 
-		if (stroke)
-			Plutovg_stroke(_PlutovgContext);
-		else
-			Plutovg_fill(_PlutovgContext);
+	// 	if (stroke)
+	// 		Plutovg_stroke(_PlutovgContext);
+	// 	else
+	// 		Plutovg_fill(_PlutovgContext);
 
-		Plutovg_identity_matrix(_PlutovgContext);
-	}
+	// 	Plutovg_identity_matrix(_PlutovgContext);
+	// }
 }
 
 void PlutovgModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
-	BLSizeI bounds(_params.screenW - _params.shapeSize,
-								 _params.screenH - _params.shapeSize);
-	uint32_t style = _params.style;
-	bool stroke = (mode == 2);
+	// BLSizeI bounds(_params.screenW - _params.shapeSize,
+	// 							 _params.screenH - _params.shapeSize);
+	// uint32_t style = _params.style;
+	// bool stroke = (mode == 2);
 
-	double wh = double(_params.shapeSize);
+	// double wh = double(_params.shapeSize);
 
-	if (mode == 0) Plutovg_set_fill_rule(_PlutovgContext, Plutovg_FILL_RULE_WINDING);
-	if (mode == 1) Plutovg_set_fill_rule(_PlutovgContext, Plutovg_FILL_RULE_EVEN_ODD);
+	// if (mode == 0) Plutovg_set_fill_rule(_PlutovgContext, Plutovg_FILL_RULE_WINDING);
+	// if (mode == 1) Plutovg_set_fill_rule(_PlutovgContext, Plutovg_FILL_RULE_EVEN_ODD);
 
-	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
-		BLPoint base(_rndCoord.nextPoint(bounds));
+	// for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
+	// 	BLPoint base(_rndCoord.nextPoint(bounds));
 
-		double x = _rndCoord.nextDouble(base.x, base.x + wh);
-		double y = _rndCoord.nextDouble(base.y, base.y + wh);
+	// 	double x = _rndCoord.nextDouble(base.x, base.x + wh);
+	// 	double y = _rndCoord.nextDouble(base.y, base.y + wh);
 
-		Plutovg_move_to(_PlutovgContext, x, y);
-		for (uint32_t p = 1; p < complexity; p++) {
-			x = _rndCoord.nextDouble(base.x, base.x + wh);
-			y = _rndCoord.nextDouble(base.y, base.y + wh);
-			Plutovg_line_to(_PlutovgContext, x, y);
-		}
-		setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh));
+	// 	Plutovg_move_to(_PlutovgContext, x, y);
+	// 	for (uint32_t p = 1; p < complexity; p++) {
+	// 		x = _rndCoord.nextDouble(base.x, base.x + wh);
+	// 		y = _rndCoord.nextDouble(base.y, base.y + wh);
+	// 		Plutovg_line_to(_PlutovgContext, x, y);
+	// 	}
+	// 	setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh));
 
-		if (stroke)
-			Plutovg_stroke(_PlutovgContext);
-		else
-			Plutovg_fill(_PlutovgContext);
-	}
+	// 	if (stroke)
+	// 		Plutovg_stroke(_PlutovgContext);
+	// 	else
+	// 		Plutovg_fill(_PlutovgContext);
+	// }
 }
 
 void PlutovgModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {
-	BLSizeI bounds(_params.screenW - _params.shapeSize,
-								 _params.screenH - _params.shapeSize);
-	uint32_t style = _params.style;
+	// BLSizeI bounds(_params.screenW - _params.shapeSize,
+	// 							 _params.screenH - _params.shapeSize);
+	// uint32_t style = _params.style;
 
-	// No idea who invented this, but you need a `Plutovg_t` to create a `Plutovg_path_t`.
-	Plutovg_path_t* path = nullptr;
+	// // No idea who invented this, but you need a `Plutovg_t` to create a `Plutovg_path_t`.
+	// Plutovg_path_t* path = nullptr;
 
-	bool start = true;
-	double wh = double(_params.shapeSize);
+	// bool start = true;
+	// double wh = double(_params.shapeSize);
 
-	for (size_t i = 0; i < count; i++) {
-		double x = pts[i].x;
-		double y = pts[i].y;
+	// for (size_t i = 0; i < count; i++) {
+	// 	double x = pts[i].x;
+	// 	double y = pts[i].y;
 
-		if (x == -1.0 && y == -1.0) {
-			start = true;
-			continue;
-		}
+	// 	if (x == -1.0 && y == -1.0) {
+	// 		start = true;
+	// 		continue;
+	// 	}
 
-		if (start) {
-			Plutovg_move_to(_PlutovgContext, x * wh, y * wh);
-			start = false;
-		}
-		else {
-			Plutovg_line_to(_PlutovgContext, x * wh, y * wh);
-		}
-	}
+	// 	if (start) {
+	// 		Plutovg_move_to(_PlutovgContext, x * wh, y * wh);
+	// 		start = false;
+	// 	}
+	// 	else {
+	// 		Plutovg_line_to(_PlutovgContext, x * wh, y * wh);
+	// 	}
+	// }
 
-	path = Plutovg_copy_path(_PlutovgContext);
-	Plutovg_new_path(_PlutovgContext);
+	// path = Plutovg_copy_path(_PlutovgContext);
+	// Plutovg_new_path(_PlutovgContext);
 
-	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
-		Plutovg_save(_PlutovgContext);
+	// for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
+	// 	Plutovg_save(_PlutovgContext);
 
-		BLPoint base(_rndCoord.nextPoint(bounds));
-		setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh));
+	// 	BLPoint base(_rndCoord.nextPoint(bounds));
+	// 	setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh));
 
-		Plutovg_translate(_PlutovgContext, base.x, base.y);
-		Plutovg_append_path(_PlutovgContext, path);
+	// 	Plutovg_translate(_PlutovgContext, base.x, base.y);
+	// 	Plutovg_append_path(_PlutovgContext, path);
 
-		if (stroke)
-			Plutovg_stroke(_PlutovgContext);
-		else
-			Plutovg_fill(_PlutovgContext);
+	// 	if (stroke)
+	// 		Plutovg_stroke(_PlutovgContext);
+	// 	else
+	// 		Plutovg_fill(_PlutovgContext);
 
-		Plutovg_restore(_PlutovgContext);
-	}
+	// 	Plutovg_restore(_PlutovgContext);
+	// }
 
-	Plutovg_path_destroy(path);
+	// Plutovg_path_destroy(path);
 }
 
 } // {blbench}
