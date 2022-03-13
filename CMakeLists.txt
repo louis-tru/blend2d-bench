@@ -17,6 +17,7 @@ set(BLBENCH_DEFINITIONS "")
 set(BLBENCH_LIBRARIES "")
 set(BLBENCH_CFLAGS "")
 set(BLBENCH_LINK_FLAGS "")
+set(BLBENCH_LINK_DIRS "")
 
 #add_compile_options(-Winconsistent-missing-override)
 #set(CMAKE_VERBOSE_MAKEFILEON ON)
@@ -224,7 +225,8 @@ if(CAIRO_FOUND)
   list(APPEND BLBENCH_LIBRARIES ${CAIRO_LIBRARIES})
   list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_CAIRO)
   list(APPEND BLBENCH_INCLUDE_DIRS ${CAIRO_INCLUDE_DIRS})
-  # link_directories("/usr/local/lib" "${LIBRARY_PATH}")
+  list(APPEND BLBENCH_LINK_DIRS "${CAIRO_PREFIX}/lib")
+  # link_directories("${CAIRO_PREFIX}/lib")
 endif()
 
 # Bench Module - Qt5
@@ -264,7 +266,7 @@ set_property(TARGET bl_bench PROPERTY COMPILE_DEFINITIONS "${BLBENCH_DEFINITIONS
 set_property(TARGET bl_bench PROPERTY INCLUDE_DIRECTORIES "${BLBENCH_INCLUDE_DIRS}")
 set_property(TARGET bl_bench PROPERTY LINK_FLAGS "${BLBENCH_LINK_FLAGS}")
 set_property(TARGET bl_bench PROPERTY COMPILE_FLAGS "${BLBENCH_CFLAGS}")
-
+set_property(TARGET bl_bench PROPERTY LINK_DIRECTORIES "${BLBENCH_LINK_DIRS}")
 target_link_libraries(bl_bench ${BLBENCH_LIBRARIES})
 
 # mkdir build
