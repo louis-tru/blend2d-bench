@@ -31,6 +31,10 @@
 namespace blbench {
 
 struct PlutovgModule : public BenchModule {
+
+	plutovg_surface_t* _PlutovgSurface;
+	plutovg_surface_t* _PlutovgSprites[kBenchNumSprites];
+	plutovg_t* _PlutovgContext;
 	
 	// --------------------------------------------------------------------------
 	// [Construction / Destruction]
