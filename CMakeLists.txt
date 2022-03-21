@@ -246,6 +246,14 @@ endif()
 # Bench Module - Skia
 # ------------------
 
+if(1)
+  message("-- [blbench] adding support for skia")
+  list(APPEND BLBENCH_LIBRARIES skia)
+  list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_SKIA)
+  list(APPEND BLBENCH_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/build/skia)
+  list(APPEND BLBENCH_LINK_DIRS ${CMAKE_CURRENT_LIST_DIR}/build/skia)
+endif()
+
 # Bench Module - Plutovg
 # ------------------
 

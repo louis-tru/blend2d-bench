@@ -25,7 +25,7 @@
 #define BLBENCH_MODULE_H
 
 #include <blend2d.h>
-#include "./module.h"
+// #include "./module.h"
 
 namespace blbench {
 

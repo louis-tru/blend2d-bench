@@ -25,13 +25,21 @@
 #define BLBENCH_MODULE_SKIA_H
 
 #include "./module.h"
-
-#include <skia.h>
+#include <skia_config.h>
+#include <skia/core/SkCanvas.h>
+#include <skia/core/SkImage.h>
+#include <skia/core/SkBitmap.h>
+#include <skia/core/SkPath.h>
 
 namespace blbench {
 
 struct SkiaModule : public BenchModule {
-	
+
+	SkImage _SkiaSurface;
+	SkImage _SkiaSprites[kBenchNumSprites];
+	SkCanvas _SkiaContext;
+	SkPaint  _Paint;
+
 	// --------------------------------------------------------------------------
 	// [Construction / Destruction]
 	// --------------------------------------------------------------------------
@@ -44,7 +52,7 @@ struct SkiaModule : public BenchModule {
 	// --------------------------------------------------------------------------
 
 	template<typename RectT>
-	void setupStyle(uint32_t style, const RectT& rect);
+	bool setupStyle(uint32_t style, const RectT& rect, bool stroke, double radius);
 
 	virtual bool supportsCompOp(uint32_t compOp) const;
 	virtual bool supportsStyle(uint32_t style) const;

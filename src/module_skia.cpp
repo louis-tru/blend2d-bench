@@ -21,14 +21,45 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 
-#ifdef BLBENCH_ENABLE_SKIA
+// #ifdef BLBENCH_ENABLE_SKIA
 
 #include "./app.h"
 #include "./module_skia.h"
+#include <skia/core/SkBlendMode.h>
+#include <skia/core/SkImage.h>
 
 #include <algorithm>
 
 namespace blbench {
+
+static inline double u8ToUnit(int x) {
+	static const double kDiv255 = 1.0 / 255.0;
+	return double(x) * kDiv255;
+}
+
+static SkColorType toSkiaFormat(uint32_t format, SkAlphaType* at) {
+	switch (format) {
+		case BL_FORMAT_PRGB32:
+			at = true;
+			return SkColorType::kRGBA_8888_SkColorType;
+		case BL_FORMAT_XRGB32:
+			at = false;
+			return SkColorType::kRGB_888x_SkColorType;
+		default:
+			return 0xFFFFFFFFu;
+	}
+}
+
+static SkBlendMode toSkiaOperator(BLCompOp compOp) {
+	switch (compOp) {
+		case BL_COMP_OP_SRC_OVER: return SkBlendMode::kSrcOver;
+		case BL_COMP_OP_SRC_COPY: return SkBlendMode::kSrc;
+		case BL_COMP_OP_DST_IN: return SkBlendMode::kDstIn;
+		case BL_COMP_OP_DST_OUT: return SkBlendMode::kDstOut;
+		default:
+			return 0xFFFFFFFFu;
+	}
+}
 
 // ============================================================================
 // [bench::SkiaModule - Construction / Destruction]
@@ -36,9 +67,9 @@ namespace blbench {
 
 SkiaModule::SkiaModule() {
 	strcpy(_name, "Skia");
-	_cairoSurface = NULL;
-	_cairoContext = NULL;
-	memset(_cairoSprites, 0, sizeof(_cairoSprites));
+	_SkiaSurface = NULL;
+	_SkiaContext = NULL;
+	memset(_SkiaSprites, 0, sizeof(_SkiaSprites));
 }
 SkiaModule::~SkiaModule() {}
 
@@ -47,12 +78,36 @@ SkiaModule::~SkiaModule() {}
 // ============================================================================
 
 template<typename RectT>
-void SkiaModule::setupStyle(uint32_t style, const RectT& rect) {
+bool SkiaModule::setupStyle(uint32_t style, const RectT& rect, bool stroke, double radius = 0) {
+	_Paint.setStyle(stroke ? SkPaint::kStroke_Style: SkPaint::kFill_Style);
+
+	if ( style == kBenchStylePatternNN || style == kBenchStylePatternBI) {
+
+		//if (radius == 0.0) {
+		// TODO ...
+		//}
+		
+		// Matrix associated with cairo_pattern_t is inverse to Blend/Qt.
+		cairo_matrix_t matrix;
+		cairo_matrix_init_translate(&matrix, -rect.x, -rect.y);
+
+		cairo_pattern_t* pattern = cairo_pattern_create_for_surface(_cairoSprites[nextSpriteId()]);
+		cairo_pattern_set_matrix(pattern, &matrix);
+		cairo_pattern_set_extend(pattern, cairo_extend_t(_patternExtend));
+		cairo_pattern_set_filter(pattern, cairo_filter_t(_patternFilter));
+
+		cairo_set_source(_cairoContext, pattern);
+		cairo_pattern_destroy(pattern);
+
+		return false;
+	}
+
 	switch (style) {
 		case kBenchStyleSolid: {
 			BLRgba32 c(_rndColor.nextRgba32());
-			cairo_set_source_rgba(_cairoContext, u8ToUnit(c.r()), u8ToUnit(c.g()), u8ToUnit(c.b()), u8ToUnit(c.a()));
-			return;
+			_Paint.setShader(nullptr);
+			_Paint.setColor(c.value);
+			break;
 		}
 
 		case kBenchStyleLinearPad:
@@ -68,18 +123,29 @@ void SkiaModule::setupStyle(uint32_t style, const RectT& rect) {
 			BLRgba32 c1(_rndColor.nextRgba32());
 			BLRgba32 c2(_rndColor.nextRgba32());
 
-			cairo_pattern_t* pattern = NULL;
+			SkScalar pos[3] = { 0.0, 0.5, 1.0 };
+			SkTileMode mode = SkTileMode::kDecal;
+
+			switch(style) {
+				default: mode = SkTileMode::kDecal; break;
+				case kBenchStyleLinearRepeat:
+				case kBenchStyleRadialRepeat: mode = SkTileMode::kRepeat; break;
+				case kBenchStyleLinearReflect:
+				case kBenchStyleRadialReflect: mode = SkTileMode::kMirror; break;
+			}
+
+			sk_sp<SkShader> shader;
 			if (style < kBenchStyleRadialPad) {
 				// Linear gradient.
 				double x0 = rect.x + rect.w * 0.2;
 				double y0 = rect.y + rect.h * 0.2;
 				double x1 = rect.x + rect.w * 0.8;
 				double y1 = rect.y + rect.h * 0.8;
-				pattern = cairo_pattern_create_linear(x0, y0, x1, y1);
 
-				cairo_pattern_add_color_stop_rgba(pattern, 0.0, u8ToUnit(c0.r()), u8ToUnit(c0.g()), u8ToUnit(c0.b()), u8ToUnit(c0.a()));
-				cairo_pattern_add_color_stop_rgba(pattern, 0.5, u8ToUnit(c1.r()), u8ToUnit(c1.g()), u8ToUnit(c1.b()), u8ToUnit(c1.a()));
-				cairo_pattern_add_color_stop_rgba(pattern, 1.0, u8ToUnit(c2.r()), u8ToUnit(c2.g()), u8ToUnit(c2.b()), u8ToUnit(c2.a()));
+				SkPoint pts[2] = { {x0, y0}, {x1, y1} };
+				SkColor colors[3] = { c0.value, c1.value, c2.value };
+
+				shader = SkGradientShader::MakeLinear(pts, colors, pos, 3, mode, 0, nullptr);
 			}
 			else {
 				// Radial gradient.
@@ -87,36 +153,42 @@ void SkiaModule::setupStyle(uint32_t style, const RectT& rect) {
 				y += double(rect.h) / 2.0;
 
 				double r = double(rect.w + rect.h) / 4.0;
-				pattern = cairo_pattern_create_radial(x, y, r, x - r / 2, y - r / 2, 0.0);
-
-				// Color stops in Cairo's radial gradient are reverse to Blend/Qt.
-				cairo_pattern_add_color_stop_rgba(pattern, 0.0, u8ToUnit(c2.r()), u8ToUnit(c2.g()), u8ToUnit(c2.b()), u8ToUnit(c2.a()));
-				cairo_pattern_add_color_stop_rgba(pattern, 0.5, u8ToUnit(c1.r()), u8ToUnit(c1.g()), u8ToUnit(c1.b()), u8ToUnit(c1.a()));
-				cairo_pattern_add_color_stop_rgba(pattern, 1.0, u8ToUnit(c0.r()), u8ToUnit(c0.g()), u8ToUnit(c0.b()), u8ToUnit(c0.a()));
+				SkPoint pts[2] = { {x, y}, {x1, y1} };
+				SkColor colors[3] = { c2.value, c1.value, c0.value };
+		
+				shader = SkGradientShader::MakeLinear(SkPoint(x, y), r, colors, pos, 3, mode, 0, nullptr);
 			}
 
-			cairo_pattern_set_extend(pattern, cairo_extend_t(_patternExtend));
-			cairo_set_source(_cairoContext, pattern);
-			cairo_pattern_destroy(pattern);
-			return;
+			_Patint.setShader(shader);
+			break;
 		}
 
-		case kBenchStylePatternNN:
-		case kBenchStylePatternBI: {
-			// Matrix associated with cairo_pattern_t is inverse to Blend/Qt.
-			cairo_matrix_t matrix;
-			cairo_matrix_init_translate(&matrix, -rect.x, -rect.y);
+		case kBenchStyleConical: {
+			double cx = rect.x + rect.w / 2;
+			double cy = rect.y + rect.h / 2;
 
-			cairo_pattern_t* pattern = cairo_pattern_create_for_surface(_cairoSprites[nextSpriteId()]);
-			cairo_pattern_set_matrix(pattern, &matrix);
-			cairo_pattern_set_extend(pattern, cairo_extend_t(_patternExtend));
-			cairo_pattern_set_filter(pattern, cairo_filter_t(_patternFilter));
+			BLRgba32 c(_rndColor.nextRgba32());
 
-			cairo_set_source(_cairoContext, pattern);
-			cairo_pattern_destroy(pattern);
-			return;
+    // static sk_sp<SkShader> MakeTwoPointConical(const SkPoint& start, SkScalar startRadius,
+    //                                            const SkPoint& end, SkScalar endRadius,
+    //                                            const SkColor colors[], const SkScalar pos[],
+    //                                            int count, SkTileMode mode,
+    //                                            uint32_t flags, const SkMatrix* localMatrix);
+
+			sk_sp<SkShader> shader = SkGradientShader::MakeTwoPointConical(SkPoint(), 0);
+
+			QConicalGradient g(qreal(cx), qreal(cy), qreal(0));
+
+			g.setColorAt(qreal(0.00), c);
+			g.setColorAt(qreal(0.33), QtUtil::toQColor(_rndColor.nextRgba32()));
+			g.setColorAt(qreal(0.66), QtUtil::toQColor(_rndColor.nextRgba32()));
+			g.setColorAt(qreal(1.00), c);
+
+			// return QBrush(g);
 		}
 	}
+
+	return true;
 }
 
 // ============================================================================
@@ -124,19 +196,23 @@ void SkiaModule::setupStyle(uint32_t style, const RectT& rect) {
 // ============================================================================
 
 bool SkiaModule::supportsCompOp(uint32_t compOp) const {
-	return CairoUtils::toCairoOperator(compOp) != 0xFFFFFFFFu;
+	return compOp == BL_COMP_OP_SRC_COPY ||
+				compOp == BL_COMP_OP_SRC_OVER ||
+				compOp == BL_COMP_OP_DST_IN ||
+				compOp == BL_COMP_OP_DST_OUT;
 }
 
 bool SkiaModule::supportsStyle(uint32_t style) const {
-	return style == kBenchStyleSolid         ||
-				 style == kBenchStyleLinearPad     ||
-				 style == kBenchStyleLinearRepeat  ||
-				 style == kBenchStyleLinearReflect ||
-				 style == kBenchStyleRadialPad     ||
-				 style == kBenchStyleRadialRepeat  ||
-				 style == kBenchStyleRadialReflect ||
-				 style == kBenchStylePatternNN     ||
-				 style == kBenchStylePatternBI     ;
+	return style == kBenchStyleSolid          ||
+					style == kBenchStyleLinearPad      ||
+					style == kBenchStyleLinearRepeat   ||
+					style == kBenchStyleLinearReflect  ||
+					style == kBenchStyleRadialPad      ||
+					style == kBenchStyleRadialRepeat   ||
+					style == kBenchStyleRadialReflect  ||
+					style == kBenchStyleConical        ||
+					style == kBenchStylePatternNN      ||
+					style == kBenchStylePatternBI      ;
 }
 
 void SkiaModule::onBeforeRun() {
@@ -152,13 +228,15 @@ void SkiaModule::onBeforeRun() {
 		sprite.getData(&spriteData);
 
 		int stride = int(spriteData.stride);
-		int format = CairoUtils::toCairoFormat(spriteData.format);
+		SkAlphaType alpha;
+		SkColorType format = toSkiaFormat(spriteData.format, alpha);
+
 		unsigned char* pixels = static_cast<unsigned char*>(spriteData.pixelData);
 
-		cairo_surface_t* cairoSprite = cairo_image_surface_create_for_data(
-			pixels, cairo_format_t(format), spriteData.size.w, spriteData.size.h, stride);
+		SkImageInfo skiaSprite;
+		skiaSprite.installPixels(SkImageInfo::Make(w, h, format, alpha), pixels, stride);
 
-		_cairoSprites[i] = cairoSprite;
+		_SkiaSprites[i] = skiaSprite;
 	}
 
 	// Initialize the surface and the context.
@@ -168,57 +246,30 @@ void SkiaModule::onBeforeRun() {
 		_surface.makeMutable(&surfaceData);
 
 		int stride = int(surfaceData.stride);
-		int format = CairoUtils::toCairoFormat(surfaceData.format);
+		SkAlphaType alpha;
+		int format = toSkiaFormat(surfaceData.format, &alpha);
 		unsigned char* pixels = (unsigned char*)surfaceData.pixelData;
 
-		_cairoSurface = cairo_image_surface_create_for_data(
-			pixels, cairo_format_t(format), w, h, stride);
-
-		if (_cairoSurface == NULL)
+		if (!_SkiaSurface.installPixels(SkImageInfo::Make(w, h, format, alpha), pixels, stride))
 			return;
 
-		_cairoContext = cairo_create(_cairoSurface);
-		if (_cairoContext == NULL)
-			return;
+		_SkiaContext = SkCanvas(_SkiaSurface);
+		// _SkiaContext.save();
 	}
 
 	// Setup the context.
-	cairo_set_operator(_cairoContext, CAIRO_OPERATOR_CLEAR);
-	cairo_rectangle(_cairoContext, 0, 0, w, h);
-	cairo_fill(_cairoContext);
+	_SkiaContext.clear(0xff000000);
 
-	cairo_set_operator(_cairoContext, cairo_operator_t(CairoUtils::toCairoOperator(_params.compOp)));
-	cairo_set_line_width(_cairoContext, _params.strokeWidth);
-
-	// Setup globals.
-	_patternExtend = CAIRO_EXTEND_REPEAT;
-	_patternFilter = CAIRO_FILTER_NEAREST;
-
-	switch (style) {
-		case kBenchStyleLinearPad      : _patternExtend = CAIRO_EXTEND_PAD     ; break;
-		case kBenchStyleLinearRepeat   : _patternExtend = CAIRO_EXTEND_REPEAT  ; break;
-		case kBenchStyleLinearReflect  : _patternExtend = CAIRO_EXTEND_REFLECT ; break;
-		case kBenchStyleRadialPad      : _patternExtend = CAIRO_EXTEND_PAD     ; break;
-		case kBenchStyleRadialRepeat   : _patternExtend = CAIRO_EXTEND_REPEAT  ; break;
-		case kBenchStyleRadialReflect  : _patternExtend = CAIRO_EXTEND_REFLECT ; break;
-		case kBenchStylePatternNN      : _patternFilter = CAIRO_FILTER_NEAREST ; break;
-		case kBenchStylePatternBI      : _patternFilter = CAIRO_FILTER_BILINEAR; break;
-	}
+	_Paint = SkPaint();
+	_Paint.setAntiAlias(true);
+	_Paint.setBlendMode(toSkiaOperator(_params.compOp));
+	_Paint.setStrokeWidth(_params.strokeWidth);
 }
 
 void SkiaModule::onAfterRun() {
 	// Free the surface & the context.
-	cairo_destroy(_cairoContext);
-	cairo_surface_destroy(_cairoSurface);
-
-	_cairoContext = NULL;
-	_cairoSurface = NULL;
-
-	// Free the sprites.
-	for (uint32_t i = 0; i < kBenchNumSprites; i++) {
-		cairo_surface_destroy(_cairoSprites[i]);
-		_cairoSprites[i] = NULL;
-	}
+	// _SkiaContext.restoreToCount(0);
+	// _Paint = SkPaint();
 }
 
 void SkiaModule::onDoRectAligned(bool stroke) {
@@ -229,15 +280,12 @@ void SkiaModule::onDoRectAligned(bool stroke) {
 
 	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
 		BLRectI rect(_rndCoord.nextRectI(bounds, wh, wh));
-		setupStyle<BLRectI>(style, rect);
-
-		if (stroke) {
-			cairo_rectangle(_cairoContext, rect.x + 0.5, rect.y + 0.5, rect.w, rect.h);
-			cairo_stroke(_cairoContext);
-		}
-		else {
-			cairo_rectangle(_cairoContext, rect.x, rect.y, rect.w, rect.h);
-			cairo_fill(_cairoContext);
+		if (setupStyle<BLRectI>(style, rect, stroke)) {
+			if (stroke) {
+				_SkiaContext.drawRect(SkRect::MakeXYWH(rect.x + 0.5, rect.y + 0.5, rect.w, rect.h), _Paint);
+			} else {
+				_SkiaContext.drawRect(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), _Paint);
+			}
 		}
 	}
 }
@@ -251,13 +299,9 @@ void SkiaModule::onDoRectSmooth(bool stroke) {
 	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
 		BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
 
-		setupStyle<BLRect>(style, rect);
-		cairo_rectangle(_cairoContext, rect.x, rect.y, rect.w, rect.h);
-
-		if (stroke)
-			cairo_stroke(_cairoContext);
-		else
-			cairo_fill(_cairoContext);
+		if (setupStyle<BLRect>(style, rect, stroke)) {
+			_SkiaContext.drawRect(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), _Paint);
+		}
 	}
 }
 
@@ -273,19 +317,14 @@ void SkiaModule::onDoRectRotated(bool stroke) {
 	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++, angle += 0.01) {
 		BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
 
-		cairo_translate(_cairoContext, cx, cy);
-		cairo_rotate(_cairoContext, angle);
-		cairo_translate(_cairoContext, -cx, -cy);
+		_SkiaContext.translate(cx, cy);
+		_SkiaContext.rotate(angle);
+		_SkiaContext.translate(-cx, -cy);
 
-		setupStyle<BLRect>(style, rect);
-		cairo_rectangle(_cairoContext, rect.x, rect.y, rect.w, rect.h);
-
-		if (stroke)
-			cairo_stroke(_cairoContext);
-		else
-			cairo_fill(_cairoContext);
-
-		cairo_identity_matrix(_cairoContext);
+		if (setupStyle<BLRect>(style, rect, stroke)) {
+			_SkiaContext.drawRect(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), _Paint);
+		}
+		_SkiaContext.resetMatrix();
 	}
 }
 
@@ -299,13 +338,10 @@ void SkiaModule::onDoRoundSmooth(bool stroke) {
 		BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
 		double radius = _rndExtra.nextDouble(4.0, 40.0);
 
-		setupStyle<BLRect>(style, rect);
-		CairoUtils::roundRect(_cairoContext, rect, radius);
-
-		if (stroke)
-			cairo_stroke(_cairoContext);
-		else
-			cairo_fill(_cairoContext);
+		if (setupStyle<BLRect>(style, rect, stroke, radius)) {
+			SkRRect rrect = SkRRect::MakeRectXY(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), radius, radius);
+			_SkiaContext.drawRRect(rrect, _Paint);
+		}
 	}
 }
 
@@ -326,15 +362,12 @@ void SkiaModule::onDoRoundRotated(bool stroke) {
 		cairo_rotate(_cairoContext, angle);
 		cairo_translate(_cairoContext, -cx, -cy);
 
-		setupStyle<BLRect>(style, rect);
-		CairoUtils::roundRect(_cairoContext, rect, radius);
+		if (setupStyle<BLRect>(style, rect, stroke, radius)) {
+			SkRRect rrect = SkRRect::MakeRectXY(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), radius, radius);
+			_SkiaContext.drawRRect(rrect, _Paint);
+		}
 
-		if (stroke)
-			cairo_stroke(_cairoContext);
-		else
-			cairo_fill(_cairoContext);
-
-		cairo_identity_matrix(_cairoContext);
+		_SkiaContext.resetMatrix();
 	}
 }
 
@@ -346,8 +379,10 @@ void SkiaModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
 
 	double wh = double(_params.shapeSize);
 
-	if (mode == 0) cairo_set_fill_rule(_cairoContext, CAIRO_FILL_RULE_WINDING);
-	if (mode == 1) cairo_set_fill_rule(_cairoContext, CAIRO_FILL_RULE_EVEN_ODD);
+	SkPath path;
+
+	if (mode == 0) path.setFillType(SkPathFillType::kWinding);
+	if (mode == 1) path.setFillType(SkPathFillType::kEvenOdd);
 
 	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
 		BLPoint base(_rndCoord.nextPoint(bounds));
@@ -355,18 +390,16 @@ void SkiaModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
 		double x = _rndCoord.nextDouble(base.x, base.x + wh);
 		double y = _rndCoord.nextDouble(base.y, base.y + wh);
 
-		cairo_move_to(_cairoContext, x, y);
+		path.moveTo(x, y);
 		for (uint32_t p = 1; p < complexity; p++) {
 			x = _rndCoord.nextDouble(base.x, base.x + wh);
 			y = _rndCoord.nextDouble(base.y, base.y + wh);
-			cairo_line_to(_cairoContext, x, y);
+			path.lineTo(x, y);
 		}
-		setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh));
 
-		if (stroke)
-			cairo_stroke(_cairoContext);
-		else
-			cairo_fill(_cairoContext);
+		if (setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh), stroke)) {
+			_SkiaContext.drawPath(path, _Paint);
+		}
 	}
 }
 
@@ -376,7 +409,7 @@ void SkiaModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {
 	uint32_t style = _params.style;
 
 	// No idea who invented this, but you need a `cairo_t` to create a `cairo_path_t`.
-	cairo_path_t* path = nullptr;
+	SkPath path;
 
 	bool start = true;
 	double wh = double(_params.shapeSize);
@@ -391,37 +424,27 @@ void SkiaModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {
 		}
 
 		if (start) {
-			cairo_move_to(_cairoContext, x * wh, y * wh);
+			path.moveTo(x * wh, y * wh);
 			start = false;
 		}
 		else {
-			cairo_line_to(_cairoContext, x * wh, y * wh);
+			path.lineTo(_cairoContext, x * wh, y * wh);
 		}
 	}
 
-	path = cairo_copy_path(_cairoContext);
-	cairo_new_path(_cairoContext);
-
 	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
-		cairo_save(_cairoContext);
+		_SkiaContext.save();
 
 		BLPoint base(_rndCoord.nextPoint(bounds));
-		setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh));
+		_SkiaContext.translate(base.x, base.y);
 
-		cairo_translate(_cairoContext, base.x, base.y);
-		cairo_append_path(_cairoContext, path);
-
-		if (stroke)
-			cairo_stroke(_cairoContext);
-		else
-			cairo_fill(_cairoContext);
-
-		cairo_restore(_cairoContext);
+		if (setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh), stroke)) {
+			_SkiaContext.drawPath(path, _Paint);
+		}
+		_SkiaContext.restore();
 	}
-
-	cairo_path_destroy(path);
 }
 
 } // {blbench}
 
-#endif // BLBENCH_ENABLE_CAIRO
+// #endif // BLBENCH_ENABLE_SKIA
