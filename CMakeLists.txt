@@ -7,7 +7,7 @@ cmake_policy(SET CMP0063 NEW) # Honor visibility properties.
 project(bl_bench CXX)
 include(FindPkgConfig)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 set(BLBENCH_DIR "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "BlBench directory")
 set(BLEND2D_DIR "${BLBENCH_DIR}/../blend2d" CACHE PATH "Location of 'blend2d'")
@@ -250,8 +250,8 @@ if(1)
   message("-- [blbench] adding support for skia")
   list(APPEND BLBENCH_LIBRARIES skia)
   list(APPEND BLBENCH_DEFINITIONS BLBENCH_ENABLE_SKIA)
-  list(APPEND BLBENCH_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/build/skia)
-  list(APPEND BLBENCH_LINK_DIRS ${CMAKE_CURRENT_LIST_DIR}/build/skia)
+  list(APPEND BLBENCH_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/build/skia ${CMAKE_CURRENT_LIST_DIR}/3rdparty/skia)
+  list(APPEND BLBENCH_LINK_DIRS    ${CMAKE_CURRENT_LIST_DIR}/build/skia)
 endif()
 
 # Bench Module - Plutovg

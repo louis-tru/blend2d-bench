@@ -385,13 +385,6 @@ int BenchApp::run() {
     }
     #endif
 
-    #if defined(BLBENCH_ENABLE_SKIA)
-    {
-      SkiaModule mod;
-      runModule(mod, params);
-    }
-    #endif
-
     #if defined(BLBENCH_ENABLE_PLUTOVG)
     {
       PlutovgModule mod;
@@ -399,6 +392,12 @@ int BenchApp::run() {
     }
     #endif
 
+    #if defined(BLBENCH_ENABLE_SKIA)
+    {
+      SkiaModule mod;
+      runModule(mod, params);
+    }
+    #endif
     
   }
 

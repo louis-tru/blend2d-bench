@@ -21,32 +21,28 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 
-// #ifdef BLBENCH_ENABLE_SKIA
+#ifdef BLBENCH_ENABLE_SKIA
 
 #include "./app.h"
 #include "./module_skia.h"
 #include <skia/core/SkBlendMode.h>
 #include <skia/core/SkImage.h>
+#include <skia/effects/SkGradientShader.h>
 
 #include <algorithm>
 
 namespace blbench {
 
-static inline double u8ToUnit(int x) {
-	static const double kDiv255 = 1.0 / 255.0;
-	return double(x) * kDiv255;
-}
-
 static SkColorType toSkiaFormat(uint32_t format, SkAlphaType* at) {
 	switch (format) {
 		case BL_FORMAT_PRGB32:
-			at = true;
+			*at = kPremul_SkAlphaType;
 			return SkColorType::kRGBA_8888_SkColorType;
 		case BL_FORMAT_XRGB32:
-			at = false;
+			*at = kUnpremul_SkAlphaType;
 			return SkColorType::kRGB_888x_SkColorType;
 		default:
-			return 0xFFFFFFFFu;
+			return SkColorType::kUnknown_SkColorType;
 	}
 }
 
@@ -57,7 +53,7 @@ static SkBlendMode toSkiaOperator(BLCompOp compOp) {
 		case BL_COMP_OP_DST_IN: return SkBlendMode::kDstIn;
 		case BL_COMP_OP_DST_OUT: return SkBlendMode::kDstOut;
 		default:
-			return 0xFFFFFFFFu;
+			return SkBlendMode::kSrc;
 	}
 }
 
@@ -67,8 +63,7 @@ static SkBlendMode toSkiaOperator(BLCompOp compOp) {
 
 SkiaModule::SkiaModule() {
 	strcpy(_name, "Skia");
-	_SkiaSurface = NULL;
-	_SkiaContext = NULL;
+	_SkiaContext = nullptr;
 	memset(_SkiaSprites, 0, sizeof(_SkiaSprites));
 }
 SkiaModule::~SkiaModule() {}
@@ -78,38 +73,44 @@ SkiaModule::~SkiaModule() {}
 // ============================================================================
 
 template<typename RectT>
-bool SkiaModule::setupStyle(uint32_t style, const RectT& rect, bool stroke, double radius = 0) {
+bool SkiaModule::setupStyle(uint32_t style, const RectT& rect, bool stroke, double radius) {
 	_Paint.setStyle(stroke ? SkPaint::kStroke_Style: SkPaint::kFill_Style);
 
 	if ( style == kBenchStylePatternNN || style == kBenchStylePatternBI) {
+		_SkiaContext->save();
+		_SkiaContext->scale(0.5, 0.5);
 
-		//if (radius == 0.0) {
-		// TODO ...
-		//}
-		
-		// Matrix associated with cairo_pattern_t is inverse to Blend/Qt.
-		cairo_matrix_t matrix;
-		cairo_matrix_init_translate(&matrix, -rect.x, -rect.y);
+		SkImage* sp = _SkiaSprites[nextSpriteId()];
 
-		cairo_pattern_t* pattern = cairo_pattern_create_for_surface(_cairoSprites[nextSpriteId()]);
-		cairo_pattern_set_matrix(pattern, &matrix);
-		cairo_pattern_set_extend(pattern, cairo_extend_t(_patternExtend));
-		cairo_pattern_set_filter(pattern, cairo_filter_t(_patternFilter));
+		SkFilterMode mode = style == kBenchStylePatternNN ? SkFilterMode::kNearest: SkFilterMode::kLinear;
 
-		cairo_set_source(_cairoContext, pattern);
-		cairo_pattern_destroy(pattern);
+		_SkiaContext->drawImageRect(sp,
+			SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h),
+			SkRect::MakeXYWH(rect.x + 0.5, rect.y + 0.5, rect.w, rect.h),
+			SkSamplingOptions(mode, SkMipmapMode::kNone), &_Paint, SkCanvas::kFast_SrcRectConstraint);
 
+		_SkiaContext->restore();
 		return false;
 	}
 
-	switch (style) {
-		case kBenchStyleSolid: {
-			BLRgba32 c(_rndColor.nextRgba32());
-			_Paint.setShader(nullptr);
-			_Paint.setColor(c.value);
-			break;
-		}
+	_Paint.setShader(nullptr);
+	
+	if (style == kBenchStyleSolid) {
+		BLRgba32 c(_rndColor.nextRgba32());
+		_Paint.setColor(c.value);
+		return true;
+	}
 
+	SkTileMode mode = SkTileMode::kClamp;
+	switch(style) {
+		default: mode = SkTileMode::kClamp; break;
+		case kBenchStyleLinearRepeat:
+		case kBenchStyleRadialRepeat: mode = SkTileMode::kRepeat; break;
+		case kBenchStyleLinearReflect:
+		case kBenchStyleRadialReflect: mode = SkTileMode::kMirror; break;
+	}
+
+	switch (style) {
 		case kBenchStyleLinearPad:
 		case kBenchStyleLinearRepeat:
 		case kBenchStyleLinearReflect:
@@ -124,15 +125,6 @@ bool SkiaModule::setupStyle(uint32_t style, const RectT& rect, bool stroke, doub
 			BLRgba32 c2(_rndColor.nextRgba32());
 
 			SkScalar pos[3] = { 0.0, 0.5, 1.0 };
-			SkTileMode mode = SkTileMode::kDecal;
-
-			switch(style) {
-				default: mode = SkTileMode::kDecal; break;
-				case kBenchStyleLinearRepeat:
-				case kBenchStyleRadialRepeat: mode = SkTileMode::kRepeat; break;
-				case kBenchStyleLinearReflect:
-				case kBenchStyleRadialReflect: mode = SkTileMode::kMirror; break;
-			}
 
 			sk_sp<SkShader> shader;
 			if (style < kBenchStyleRadialPad) {
@@ -142,7 +134,7 @@ bool SkiaModule::setupStyle(uint32_t style, const RectT& rect, bool stroke, doub
 				double x1 = rect.x + rect.w * 0.8;
 				double y1 = rect.y + rect.h * 0.8;
 
-				SkPoint pts[2] = { {x0, y0}, {x1, y1} };
+				SkPoint pts[2] = { SkPoint::Make(x0, y0), SkPoint::Make(x1, y1) };
 				SkColor colors[3] = { c0.value, c1.value, c2.value };
 
 				shader = SkGradientShader::MakeLinear(pts, colors, pos, 3, mode, 0, nullptr);
@@ -153,13 +145,12 @@ bool SkiaModule::setupStyle(uint32_t style, const RectT& rect, bool stroke, doub
 				y += double(rect.h) / 2.0;
 
 				double r = double(rect.w + rect.h) / 4.0;
-				SkPoint pts[2] = { {x, y}, {x1, y1} };
 				SkColor colors[3] = { c2.value, c1.value, c0.value };
 		
-				shader = SkGradientShader::MakeLinear(SkPoint(x, y), r, colors, pos, 3, mode, 0, nullptr);
+				shader = SkGradientShader::MakeRadial(SkPoint::Make(x, y), r, colors, pos, 3, mode, 0, nullptr);
 			}
 
-			_Patint.setShader(shader);
+			_Paint.setShader(shader);
 			break;
 		}
 
@@ -169,22 +160,13 @@ bool SkiaModule::setupStyle(uint32_t style, const RectT& rect, bool stroke, doub
 
 			BLRgba32 c(_rndColor.nextRgba32());
 
-    // static sk_sp<SkShader> MakeTwoPointConical(const SkPoint& start, SkScalar startRadius,
-    //                                            const SkPoint& end, SkScalar endRadius,
-    //                                            const SkColor colors[], const SkScalar pos[],
-    //                                            int count, SkTileMode mode,
-    //                                            uint32_t flags, const SkMatrix* localMatrix);
+			SkScalar pos[4] = { 0.0, 0.33, 0.66, 1.0 };
+			SkColor colors[4] = { c.value, _rndColor.nextRgba32().value, _rndColor.nextRgba32().value, c.value };
+			sk_sp<SkShader> shader = SkGradientShader::MakeSweep(cx, cy, colors, pos, 4, mode, 0, 360, 0, nullptr);
 
-			sk_sp<SkShader> shader = SkGradientShader::MakeTwoPointConical(SkPoint(), 0);
+			_Paint.setShader(shader);
 
-			QConicalGradient g(qreal(cx), qreal(cy), qreal(0));
-
-			g.setColorAt(qreal(0.00), c);
-			g.setColorAt(qreal(0.33), QtUtil::toQColor(_rndColor.nextRgba32()));
-			g.setColorAt(qreal(0.66), QtUtil::toQColor(_rndColor.nextRgba32()));
-			g.setColorAt(qreal(1.00), c);
-
-			// return QBrush(g);
+			break;
 		}
 	}
 
@@ -229,14 +211,14 @@ void SkiaModule::onBeforeRun() {
 
 		int stride = int(spriteData.stride);
 		SkAlphaType alpha;
-		SkColorType format = toSkiaFormat(spriteData.format, alpha);
+		SkColorType format = toSkiaFormat(spriteData.format, &alpha);
 
 		unsigned char* pixels = static_cast<unsigned char*>(spriteData.pixelData);
 
-		SkImageInfo skiaSprite;
+		SkBitmap skiaSprite;
 		skiaSprite.installPixels(SkImageInfo::Make(w, h, format, alpha), pixels, stride);
 
-		_SkiaSprites[i] = skiaSprite;
+		_SkiaSprites[i] = SkSafeRef(SkImage::MakeFromBitmap(skiaSprite).get());
 	}
 
 	// Initialize the surface and the context.
@@ -247,18 +229,19 @@ void SkiaModule::onBeforeRun() {
 
 		int stride = int(surfaceData.stride);
 		SkAlphaType alpha;
-		int format = toSkiaFormat(surfaceData.format, &alpha);
+		SkColorType format = toSkiaFormat(surfaceData.format, &alpha);
 		unsigned char* pixels = (unsigned char*)surfaceData.pixelData;
+
+		// printf("onBeforeRun, w: %d, h: %d \n", w, h);
 
 		if (!_SkiaSurface.installPixels(SkImageInfo::Make(w, h, format, alpha), pixels, stride))
 			return;
 
-		_SkiaContext = SkCanvas(_SkiaSurface);
-		// _SkiaContext.save();
+		_SkiaContext = new SkCanvas(_SkiaSurface);
 	}
 
 	// Setup the context.
-	_SkiaContext.clear(0xff000000);
+	_SkiaContext->clear(0xff000000);
 
 	_Paint = SkPaint();
 	_Paint.setAntiAlias(true);
@@ -268,11 +251,16 @@ void SkiaModule::onBeforeRun() {
 
 void SkiaModule::onAfterRun() {
 	// Free the surface & the context.
-	// _SkiaContext.restoreToCount(0);
+	delete _SkiaContext;
+	_SkiaContext = nullptr;
 	// _Paint = SkPaint();
+	for (uint32_t i = 0; i < kBenchNumSprites; i++) {
+		SkSafeUnref(_SkiaSprites[i]);
+		_SkiaSprites[i] = nullptr;
+	}
 }
 
-void SkiaModule::onDoRectAligned(bool stroke) {
+void SkiaModule::onDoRectAligned(bool stroke) {//printf("%s\n", "onDoRectAligned");
 	BLSizeI bounds(_params.screenW, _params.screenH);
 	uint32_t style = _params.style;
 
@@ -282,15 +270,15 @@ void SkiaModule::onDoRectAligned(bool stroke) {
 		BLRectI rect(_rndCoord.nextRectI(bounds, wh, wh));
 		if (setupStyle<BLRectI>(style, rect, stroke)) {
 			if (stroke) {
-				_SkiaContext.drawRect(SkRect::MakeXYWH(rect.x + 0.5, rect.y + 0.5, rect.w, rect.h), _Paint);
+				_SkiaContext->drawRect(SkRect::MakeXYWH(rect.x + 0.5, rect.y + 0.5, rect.w, rect.h), _Paint);
 			} else {
-				_SkiaContext.drawRect(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), _Paint);
+				_SkiaContext->drawRect(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), _Paint);
 			}
 		}
 	}
 }
 
-void SkiaModule::onDoRectSmooth(bool stroke) {
+void SkiaModule::onDoRectSmooth(bool stroke) {//printf("%s\n", "onDoRectSmooth");
 	BLSize bounds(_params.screenW, _params.screenH);
 	uint32_t style = _params.style;
 
@@ -300,12 +288,12 @@ void SkiaModule::onDoRectSmooth(bool stroke) {
 		BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
 
 		if (setupStyle<BLRect>(style, rect, stroke)) {
-			_SkiaContext.drawRect(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), _Paint);
+			_SkiaContext->drawRect(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), _Paint);
 		}
 	}
 }
 
-void SkiaModule::onDoRectRotated(bool stroke) {
+void SkiaModule::onDoRectRotated(bool stroke) {//printf("%s\n", "onDoRectRotated");
 	BLSize bounds(_params.screenW, _params.screenH);
 	uint32_t style = _params.style;
 
@@ -317,18 +305,20 @@ void SkiaModule::onDoRectRotated(bool stroke) {
 	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++, angle += 0.01) {
 		BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
 
-		_SkiaContext.translate(cx, cy);
-		_SkiaContext.rotate(angle);
-		_SkiaContext.translate(-cx, -cy);
+		_SkiaContext->translate(cx, cy);
+		_SkiaContext->rotate(angle);
+		_SkiaContext->translate(-cx, -cy);
 
 		if (setupStyle<BLRect>(style, rect, stroke)) {
-			_SkiaContext.drawRect(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), _Paint);
+			// printf("SkRect x:%lf, y:%lf, w:%lf, h:%lf\n", rect.x, rect.y, rect.w, rect.h);
+			// printf("onDoRoundRotated#setupStyle\n");
+			_SkiaContext->drawRect(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), _Paint);
 		}
-		_SkiaContext.resetMatrix();
+		_SkiaContext->resetMatrix();
 	}
 }
 
-void SkiaModule::onDoRoundSmooth(bool stroke) {
+void SkiaModule::onDoRoundSmooth(bool stroke) {//printf("%s\n", "onDoRoundSmooth");
 	BLSize bounds(_params.screenW, _params.screenH);
 	uint32_t style = _params.style;
 
@@ -340,12 +330,12 @@ void SkiaModule::onDoRoundSmooth(bool stroke) {
 
 		if (setupStyle<BLRect>(style, rect, stroke, radius)) {
 			SkRRect rrect = SkRRect::MakeRectXY(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), radius, radius);
-			_SkiaContext.drawRRect(rrect, _Paint);
+			_SkiaContext->drawRRect(rrect, _Paint);
 		}
 	}
 }
 
-void SkiaModule::onDoRoundRotated(bool stroke) {
+void SkiaModule::onDoRoundRotated(bool stroke) {//printf("%s\n", "onDoRoundRotated");
 	BLSize bounds(_params.screenW, _params.screenH);
 	uint32_t style = _params.style;
 
@@ -358,20 +348,20 @@ void SkiaModule::onDoRoundRotated(bool stroke) {
 		BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
 		double radius = _rndExtra.nextDouble(4.0, 40.0);
 
-		cairo_translate(_cairoContext, cx, cy);
-		cairo_rotate(_cairoContext, angle);
-		cairo_translate(_cairoContext, -cx, -cy);
+		_SkiaContext->translate(cx, cy);
+		_SkiaContext->rotate(angle);
+		_SkiaContext->translate(-cx, -cy);
 
 		if (setupStyle<BLRect>(style, rect, stroke, radius)) {
 			SkRRect rrect = SkRRect::MakeRectXY(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), radius, radius);
-			_SkiaContext.drawRRect(rrect, _Paint);
+			_SkiaContext->drawRRect(rrect, _Paint);
 		}
 
-		_SkiaContext.resetMatrix();
+		_SkiaContext->resetMatrix();
 	}
 }
 
-void SkiaModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
+void SkiaModule::onDoPolygon(uint32_t mode, uint32_t complexity) {//printf("%s\n", "onDoPolygon");
 	BLSizeI bounds(_params.screenW - _params.shapeSize,
 								 _params.screenH - _params.shapeSize);
 	uint32_t style = _params.style;
@@ -398,12 +388,12 @@ void SkiaModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
 		}
 
 		if (setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh), stroke)) {
-			_SkiaContext.drawPath(path, _Paint);
+			_SkiaContext->drawPath(path, _Paint);
 		}
 	}
 }
 
-void SkiaModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {
+void SkiaModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {//printf("%s\n", "onDoShape");
 	BLSizeI bounds(_params.screenW - _params.shapeSize,
 								 _params.screenH - _params.shapeSize);
 	uint32_t style = _params.style;
@@ -428,23 +418,23 @@ void SkiaModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {
 			start = false;
 		}
 		else {
-			path.lineTo(_cairoContext, x * wh, y * wh);
+			path.lineTo(x * wh, y * wh);
 		}
 	}
 
 	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
-		_SkiaContext.save();
+		_SkiaContext->save();
 
 		BLPoint base(_rndCoord.nextPoint(bounds));
-		_SkiaContext.translate(base.x, base.y);
+		_SkiaContext->translate(base.x, base.y);
 
 		if (setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh), stroke)) {
-			_SkiaContext.drawPath(path, _Paint);
+			_SkiaContext->drawPath(path, _Paint);
 		}
-		_SkiaContext.restore();
+		_SkiaContext->restore();
 	}
 }
 
 } // {blbench}
 
-// #endif // BLBENCH_ENABLE_SKIA
+#endif // BLBENCH_ENABLE_SKIA

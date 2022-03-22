@@ -35,9 +35,9 @@ namespace blbench {
 
 struct SkiaModule : public BenchModule {
 
-	SkImage _SkiaSurface;
-	SkImage _SkiaSprites[kBenchNumSprites];
-	SkCanvas _SkiaContext;
+	SkBitmap _SkiaSurface;
+	SkImage* _SkiaSprites[kBenchNumSprites];
+	SkCanvas* _SkiaContext;
 	SkPaint  _Paint;
 
 	// --------------------------------------------------------------------------
@@ -52,7 +52,7 @@ struct SkiaModule : public BenchModule {
 	// --------------------------------------------------------------------------
 
 	template<typename RectT>
-	bool setupStyle(uint32_t style, const RectT& rect, bool stroke, double radius);
+	bool setupStyle(uint32_t style, const RectT& rect, bool stroke, double radius = 0);
 
 	virtual bool supportsCompOp(uint32_t compOp) const;
 	virtual bool supportsStyle(uint32_t style) const;
