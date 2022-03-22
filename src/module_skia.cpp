@@ -21,7 +21,7 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 
-#ifdef BLBENCH_ENABLE_SKIA
+// #ifdef BLBENCH_ENABLE_SKIA
 
 #include "./app.h"
 #include "./module_skia.h"
@@ -33,13 +33,23 @@
 
 namespace blbench {
 
+#define DEBUG 0
+
+#if DEBUG
+#define PRINTF(s, ...) printf(s, ##__VA_ARGS__)
+#else
+#define PRINTF(s, ...)
+#endif
+
 static SkColorType toSkiaFormat(uint32_t format, SkAlphaType* at) {
 	switch (format) {
 		case BL_FORMAT_PRGB32:
 			*at = kPremul_SkAlphaType;
+			//printf("SkColorType::kRGBA_8888_SkColorType\n");
 			return SkColorType::kRGBA_8888_SkColorType;
 		case BL_FORMAT_XRGB32:
 			*at = kUnpremul_SkAlphaType;
+			//printf("SkColorType::kRGB_888x_SkColorType\n");
 			return SkColorType::kRGB_888x_SkColorType;
 		default:
 			return SkColorType::kUnknown_SkColorType;
@@ -77,8 +87,9 @@ bool SkiaModule::setupStyle(uint32_t style, const RectT& rect, bool stroke, doub
 	_Paint.setStyle(stroke ? SkPaint::kStroke_Style: SkPaint::kFill_Style);
 
 	if ( style == kBenchStylePatternNN || style == kBenchStylePatternBI) {
+		PRINTF("kBenchStylePatternNN\n");
 		_SkiaContext->save();
-		_SkiaContext->scale(0.5, 0.5);
+		// _SkiaContext->scale(0.5, 0.5);
 
 		SkImage* sp = _SkiaSprites[nextSpriteId()];
 
@@ -100,6 +111,8 @@ bool SkiaModule::setupStyle(uint32_t style, const RectT& rect, bool stroke, doub
 		_Paint.setColor(c.value);
 		return true;
 	}
+
+	PRINTF("kBenchStyleLinearPad\n");
 
 	SkTileMode mode = SkTileMode::kClamp;
 	switch(style) {
@@ -232,7 +245,7 @@ void SkiaModule::onBeforeRun() {
 		SkColorType format = toSkiaFormat(surfaceData.format, &alpha);
 		unsigned char* pixels = (unsigned char*)surfaceData.pixelData;
 
-		// printf("onBeforeRun, w: %d, h: %d \n", w, h);
+		// PRINTF("onBeforeRun, w: %d, h: %d \n", w, h);
 
 		if (!_SkiaSurface.installPixels(SkImageInfo::Make(w, h, format, alpha), pixels, stride))
 			return;
@@ -269,6 +282,7 @@ void SkiaModule::onDoRectAligned(bool stroke) {//printf("%s\n", "onDoRectAligned
 	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
 		BLRectI rect(_rndCoord.nextRectI(bounds, wh, wh));
 		if (setupStyle<BLRectI>(style, rect, stroke)) {
+			PRINTF("\ronDoRectAligned x:%lf, y:%lf, w:%lf, h:%lf", rect.x, rect.y, rect.w, rect.h);
 			if (stroke) {
 				_SkiaContext->drawRect(SkRect::MakeXYWH(rect.x + 0.5, rect.y + 0.5, rect.w, rect.h), _Paint);
 			} else {
@@ -276,6 +290,8 @@ void SkiaModule::onDoRectAligned(bool stroke) {//printf("%s\n", "onDoRectAligned
 			}
 		}
 	}
+
+	PRINTF("\n");
 }
 
 void SkiaModule::onDoRectSmooth(bool stroke) {//printf("%s\n", "onDoRectSmooth");
@@ -288,9 +304,12 @@ void SkiaModule::onDoRectSmooth(bool stroke) {//printf("%s\n", "onDoRectSmooth")
 		BLRect rect(_rndCoord.nextRect(bounds, wh, wh));
 
 		if (setupStyle<BLRect>(style, rect, stroke)) {
+			PRINTF("\ronDoRectSmooth x:%lf, y:%lf, w:%lf, h:%lf", rect.x, rect.y, rect.w, rect.h);
 			_SkiaContext->drawRect(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), _Paint);
 		}
 	}
+
+	PRINTF("\n");
 }
 
 void SkiaModule::onDoRectRotated(bool stroke) {//printf("%s\n", "onDoRectRotated");
@@ -310,12 +329,14 @@ void SkiaModule::onDoRectRotated(bool stroke) {//printf("%s\n", "onDoRectRotated
 		_SkiaContext->translate(-cx, -cy);
 
 		if (setupStyle<BLRect>(style, rect, stroke)) {
-			// printf("SkRect x:%lf, y:%lf, w:%lf, h:%lf\n", rect.x, rect.y, rect.w, rect.h);
-			// printf("onDoRoundRotated#setupStyle\n");
+			PRINTF("\ronDoRectRotated x:%lf, y:%lf, w:%lf, h:%lf", rect.x, rect.y, rect.w, rect.h);
+			// PRINTF("onDoRoundRotated#setupStyle\n");
 			_SkiaContext->drawRect(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), _Paint);
 		}
 		_SkiaContext->resetMatrix();
 	}
+
+	PRINTF("\n");
 }
 
 void SkiaModule::onDoRoundSmooth(bool stroke) {//printf("%s\n", "onDoRoundSmooth");
@@ -329,10 +350,13 @@ void SkiaModule::onDoRoundSmooth(bool stroke) {//printf("%s\n", "onDoRoundSmooth
 		double radius = _rndExtra.nextDouble(4.0, 40.0);
 
 		if (setupStyle<BLRect>(style, rect, stroke, radius)) {
+			PRINTF("\ronDoRoundSmooth x:%lf, y:%lf, w:%lf, h:%lf", rect.x, rect.y, rect.w, rect.h);
 			SkRRect rrect = SkRRect::MakeRectXY(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), radius, radius);
 			_SkiaContext->drawRRect(rrect, _Paint);
 		}
 	}
+
+	PRINTF("\n");
 }
 
 void SkiaModule::onDoRoundRotated(bool stroke) {//printf("%s\n", "onDoRoundRotated");
@@ -353,12 +377,15 @@ void SkiaModule::onDoRoundRotated(bool stroke) {//printf("%s\n", "onDoRoundRotat
 		_SkiaContext->translate(-cx, -cy);
 
 		if (setupStyle<BLRect>(style, rect, stroke, radius)) {
+			PRINTF("\ronDoRoundRotated x:%lf, y:%lf, w:%lf, h:%lf", rect.x, rect.y, rect.w, rect.h);
 			SkRRect rrect = SkRRect::MakeRectXY(SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h), radius, radius);
 			_SkiaContext->drawRRect(rrect, _Paint);
 		}
 
 		_SkiaContext->resetMatrix();
 	}
+
+	PRINTF("\n");
 }
 
 void SkiaModule::onDoPolygon(uint32_t mode, uint32_t complexity) {//printf("%s\n", "onDoPolygon");
@@ -387,10 +414,15 @@ void SkiaModule::onDoPolygon(uint32_t mode, uint32_t complexity) {//printf("%s\n
 			path.lineTo(x, y);
 		}
 
-		if (setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh), stroke)) {
+		BLRect rect(base.x, base.y, wh, wh);
+
+		if (setupStyle<BLRect>(style, rect, stroke)) {
+			PRINTF("\ronDoPolygon x:%lf, y:%lf, w:%lf, h:%lf i: %d, quantity: %d", rect.x, rect.y, rect.w, rect.h, i, quantity);
 			_SkiaContext->drawPath(path, _Paint);
 		}
 	}
+
+	PRINTF("\n");
 }
 
 void SkiaModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {//printf("%s\n", "onDoShape");
@@ -428,13 +460,18 @@ void SkiaModule::onDoShape(bool stroke, const BLPoint* pts, size_t count) {//pri
 		BLPoint base(_rndCoord.nextPoint(bounds));
 		_SkiaContext->translate(base.x, base.y);
 
-		if (setupStyle<BLRect>(style, BLRect(base.x, base.y, wh, wh), stroke)) {
+		BLRect rect(base.x, base.y, wh, wh);
+
+		if (setupStyle<BLRect>(style, rect, stroke)) {
+			PRINTF("\ronDoShape x:%lf, y:%lf, w:%lf, h:%lf", rect.x, rect.y, rect.w, rect.h);
 			_SkiaContext->drawPath(path, _Paint);
 		}
 		_SkiaContext->restore();
 	}
+
+	PRINTF("\n");
 }
 
 } // {blbench}
 
-#endif // BLBENCH_ENABLE_SKIA
+// #endif // BLBENCH_ENABLE_SKIA
