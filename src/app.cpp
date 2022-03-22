@@ -349,48 +349,48 @@ int BenchApp::run() {
     }
   }
   else {
-    // {
-    //   Blend2DModule mod(0);
-    //   runModule(mod, params);
-    // }
+    {
+      Blend2DModule mod(0);
+      runModule(mod, params);
+    }
 
-    // {
-    //   Blend2DModule mod(2);
-    //   runModule(mod, params);
-    // }
+    {
+      Blend2DModule mod(2);
+      runModule(mod, params);
+    }
 
-    // {
-    //   Blend2DModule mod(4);
-    //   runModule(mod, params);
-    // }
+    {
+      Blend2DModule mod(4);
+      runModule(mod, params);
+    }
 
-    // #if defined(BLBENCH_ENABLE_AGG)
-    // {
-    //   AGGModule mod;
-    //   runModule(mod, params);
-    // }
-    // #endif
+    #if defined(BLBENCH_ENABLE_AGG)
+    {
+      AGGModule mod;
+      runModule(mod, params);
+    }
+    #endif
 
-    // #if defined(BLBENCH_ENABLE_CAIRO)
-    // {
-    //   CairoModule mod;
-    //   runModule(mod, params);
-    // }
-    // #endif
+    #if defined(BLBENCH_ENABLE_CAIRO)
+    {
+      CairoModule mod;
+      runModule(mod, params);
+    }
+    #endif
 
-    // #if defined(BLBENCH_ENABLE_QT)
-    // {
-    //   QtModule mod;
-    //   runModule(mod, params);
-    // }
-    // #endif
+    #if defined(BLBENCH_ENABLE_QT)
+    {
+      QtModule mod;
+      runModule(mod, params);
+    }
+    #endif
 
-    // #if defined(BLBENCH_ENABLE_PLUTOVG)
-    // {
-    //   PlutovgModule mod;
-    //   runModule(mod, params);
-    // }
-    // #endif
+    #if defined(BLBENCH_ENABLE_PLUTOVG)
+    {
+      PlutovgModule mod;
+      runModule(mod, params);
+    }
+    #endif
 
     #if defined(BLBENCH_ENABLE_SKIA)
     {
