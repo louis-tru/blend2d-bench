@@ -7,6 +7,7 @@ cmake_policy(SET CMP0063 NEW) # Honor visibility properties.
 project(bl_bench CXX)
 include(FindPkgConfig)
 
+SET(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_STANDARD 14)
 
 set(BLBENCH_DIR "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "BlBench directory")

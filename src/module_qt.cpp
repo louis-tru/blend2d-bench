@@ -210,6 +210,8 @@ void QtModule::onBeforeRun() {
   if (_qtContext == NULL)
     return;
 
+  // QGLFormat::hasOpenGL();
+
   // Setup the context.
   _qtContext->setCompositionMode(QPainter::CompositionMode_Source);
   _qtContext->fillRect(0, 0, w, h, QColor(0, 0, 0, 0));
@@ -500,6 +502,7 @@ void QtModule::onDoPolygon(uint32_t mode, uint32_t complexity) {
       y = _rndCoord.nextDouble(base.y, base.y + wh);
       path.lineTo(x, y);
     }
+    path.closeSubpath();
 
     if (style == kBenchStyleSolid) {
       QColor color(QtUtil::toQColor(_rndColor.nextRgba32()));

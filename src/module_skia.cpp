@@ -87,20 +87,17 @@ bool SkiaModule::setupStyle(uint32_t style, const RectT& rect, bool stroke, doub
 	_Paint.setStyle(stroke ? SkPaint::kStroke_Style: SkPaint::kFill_Style);
 
 	if ( style == kBenchStylePatternNN || style == kBenchStylePatternBI) {
-		PRINTF("kBenchStylePatternNN\n");
-		_SkiaContext->save();
-		// _SkiaContext->scale(0.5, 0.5);
+		// _SkiaContext->save();
 
 		SkImage* sp = _SkiaSprites[nextSpriteId()];
 
+		// printf("kBenchStylePatternNN, %d, %d\n", sp->width(), sp->height());
+
 		SkFilterMode mode = style == kBenchStylePatternNN ? SkFilterMode::kNearest: SkFilterMode::kLinear;
 
-		_SkiaContext->drawImageRect(sp,
-			SkRect::MakeXYWH(rect.x, rect.y, rect.w, rect.h),
-			SkRect::MakeXYWH(rect.x + 0.5, rect.y + 0.5, rect.w, rect.h),
-			SkSamplingOptions(mode, SkMipmapMode::kNone), &_Paint, SkCanvas::kFast_SrcRectConstraint);
+		_SkiaContext->drawImage(sp, rect.x, rect.y, SkSamplingOptions(mode, SkMipmapMode::kNone), &_Paint);
 
-		_SkiaContext->restore();
+		// _SkiaContext->restore();
 		return false;
 	}
 
@@ -229,9 +226,14 @@ void SkiaModule::onBeforeRun() {
 		unsigned char* pixels = static_cast<unsigned char*>(spriteData.pixelData);
 
 		SkBitmap skiaSprite;
-		skiaSprite.installPixels(SkImageInfo::Make(w, h, format, alpha), pixels, stride);
+		skiaSprite.installPixels(SkImageInfo::Make(spriteData.size.w, spriteData.size.h, format, alpha), pixels, stride);
 
-		_SkiaSprites[i] = SkSafeRef(SkImage::MakeFromBitmap(skiaSprite).get());
+		sk_sp<SkImage> sksp = SkImage::MakeFromBitmap(skiaSprite);
+
+		_SkiaSprites[i] = SkSafeRef(sksp.get());
+
+		// printf("kBenchStylePatternNN, %d, %d, %d\n", _SkiaSprites[i]->width(), _SkiaSprites[i]->height(), stride);
+
 	}
 
 	// Initialize the surface and the context.
@@ -254,7 +256,7 @@ void SkiaModule::onBeforeRun() {
 	}
 
 	// Setup the context.
-	_SkiaContext->clear(0xff000000);
+	_SkiaContext->clear(0x00000000);
 
 	_Paint = SkPaint();
 	_Paint.setAntiAlias(true);
@@ -396,10 +398,7 @@ void SkiaModule::onDoPolygon(uint32_t mode, uint32_t complexity) {//printf("%s\n
 
 	double wh = double(_params.shapeSize);
 
-	SkPath path;
-
-	if (mode == 0) path.setFillType(SkPathFillType::kWinding);
-	if (mode == 1) path.setFillType(SkPathFillType::kEvenOdd);
+	SkPathFillType fillRule = (mode != 0) ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding;
 
 	for (uint32_t i = 0, quantity = _params.quantity; i < quantity; i++) {
 		BLPoint base(_rndCoord.nextPoint(bounds));
@@ -407,12 +406,15 @@ void SkiaModule::onDoPolygon(uint32_t mode, uint32_t complexity) {//printf("%s\n
 		double x = _rndCoord.nextDouble(base.x, base.x + wh);
 		double y = _rndCoord.nextDouble(base.y, base.y + wh);
 
+		SkPath path;
+		path.setFillType(fillRule);
 		path.moveTo(x, y);
 		for (uint32_t p = 1; p < complexity; p++) {
 			x = _rndCoord.nextDouble(base.x, base.x + wh);
 			y = _rndCoord.nextDouble(base.y, base.y + wh);
 			path.lineTo(x, y);
 		}
+		path.close();
 
 		BLRect rect(base.x, base.y, wh, wh);
 

@@ -21,6 +21,8 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 
+#include <dirent.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
 #include <type_traits>
@@ -364,9 +366,16 @@ int BenchApp::run() {
       runModule(mod, params);
     }
 
-    #if defined(BLBENCH_ENABLE_AGG)
+    #if defined(BLBENCH_ENABLE_QT)
     {
-      AGGModule mod;
+      QtModule mod;
+      runModule(mod, params);
+    }
+    #endif
+
+    #if defined(BLBENCH_ENABLE_SKIA)
+    {
+      SkiaModule mod;
       runModule(mod, params);
     }
     #endif
@@ -378,13 +387,6 @@ int BenchApp::run() {
     }
     #endif
 
-    #if defined(BLBENCH_ENABLE_QT)
-    {
-      QtModule mod;
-      runModule(mod, params);
-    }
-    #endif
-
     #if defined(BLBENCH_ENABLE_PLUTOVG)
     {
       PlutovgModule mod;
@@ -392,13 +394,13 @@ int BenchApp::run() {
     }
     #endif
 
-    #if defined(BLBENCH_ENABLE_SKIA)
+    #if defined(BLBENCH_ENABLE_AGG)
     {
-      SkiaModule mod;
+      AGGModule mod;
       runModule(mod, params);
     }
     #endif
-    
+
   }
 
   return 0;
@@ -465,7 +467,12 @@ int BenchApp::runModule(BenchModule& mod, BenchParams& params) {
           if (_saveImages) {
             // Save only the last two as these are easier to compare visually.
             if (sizeId >= ARRAY_SIZE(benchShapeSizeList) - 2) {
-              sprintf(fileName, "%s-%s-%s-%s-%c.bmp",
+              sprintf(fileName, "save-%s", mod._name);
+              struct stat st;
+              if( stat( fileName, &st ) != 0 ) {
+                mkdir( fileName, 0755);
+              }
+              sprintf(fileName, "save-%s/%s-%s-%s-%c.bmp",
                 mod._name,
                 benchIdNameList[params.benchId],
                 benchCompOpList[params.compOp],

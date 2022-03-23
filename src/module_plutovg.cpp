@@ -258,7 +258,7 @@ void PlutovgModule::onBeforeRun() {
 
 	// Setup the context.
 	plutovg_set_operator(_PlutovgContext, plutovg_operator_src);
-	plutovg_set_source_rgb(_PlutovgContext, 0, 0, 0);
+	plutovg_set_source_rgba(_PlutovgContext, 0, 0, 0, 0);
 	plutovg_rect(_PlutovgContext, 0, 0, w, h);
 	plutovg_fill(_PlutovgContext);
 
